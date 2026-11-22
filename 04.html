@@ -1,58 +1,152 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第4章 第一个CUDA内核</title>
-    <link rel="stylesheet" href="theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="description" content="CUDA 第一个内核：__global__ 与 <<< >>> 启动语法、Host/Device 代码分离、七步内存流程、错误检查与 nvcc 编译流程。">
+<title>第4章 第一个CUDA内核</title>
+<style>
+:root{--paper:#fffdf9;--ink:#203035;--subtle:#53676d;--accent:#147f80;--transform:#d06d4d;--structure:#7461ba;--annotation:#916c22;--border:#dce8e4;--surface:#f3f9f6;--max-reading:820px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.85 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-underline-offset:.17em}
+a:hover{color:var(--transform)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[data-math-scroll]:focus-visible,.table-scroll:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.skip-link{position:absolute;left:1rem;top:-6rem;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:.4rem;z-index:10}
+.skip-link:focus{top:1rem}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:236px minmax(0,1fr);gap:clamp(1.5rem,4vw,4rem);padding:3rem 2rem 6rem}
+.toc{position:sticky;top:1.5rem;align-self:start;font-size:.82rem;line-height:1.5;max-height:calc(100vh - 3rem);overflow:auto}
+.toc-title{font-weight:700;letter-spacing:.06em;margin:0 0 .6rem;color:var(--ink)}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc a{display:block;text-decoration:none;color:var(--subtle);border-left:2px solid var(--border);padding:.36rem .7rem}
+.toc a:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.toc details{margin-top:1rem;border-top:1px solid var(--border);padding-top:.6rem}
+.toc summary{cursor:pointer;font-weight:600;color:var(--subtle)}
+.toc details ul{list-style:none;margin:.45rem 0 0;padding:0}
+.toc details ul a{font-size:.78rem;padding:.26rem .7rem}
+main,article,section{min-width:0}
+article{max-width:var(--max-reading)}
+section{scroll-margin-top:1.5rem;margin-top:3.6rem}
+.article-header{padding-bottom:.5rem}
+.article-header h1{font-size:clamp(2.1rem,5vw,3.2rem);line-height:1.15;letter-spacing:-.02em;margin:.4rem 0 1rem}
+.dek{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.65;color:var(--subtle);margin:0}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);line-height:1.4;margin:0 0 1.1rem}
+h3{font-size:1.18rem;line-height:1.5;margin:2rem 0 .7rem}
+h4{font-size:1rem;margin:1.4rem 0 .5rem}
+p{margin:1rem 0}
+ul,ol{margin:1rem 0;padding-left:1.4rem}
+li{margin:.3rem 0}
+strong{font-weight:700}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+code{font-size:.88em;background:#eef4f1;padding:.08em .34em;border-radius:.3em;overflow-wrap:anywhere}
+pre{margin:1.3rem 0;padding:1.1rem;background:#1c3037;color:#e7f5ef;border-radius:.8rem;overflow-x:auto;line-height:1.6;font-size:.86rem}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+figure{margin:2rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:#fff}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.83rem;line-height:1.7;color:var(--subtle);border-top:1px solid var(--border);margin-top:.9rem;padding-top:.75rem}
+.note{margin:1.5rem 0;padding:.9rem 1.1rem;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 .5rem .5rem 0}
+.note.warn{border-left-color:var(--transform);background:#fdf1ec}
+.note.tip{border-left-color:var(--annotation);background:#fbf5e6}
+.table-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:.6rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:540px}
+th,td{border-bottom:1px solid var(--border);text-align:left;padding:.6rem .7rem;vertical-align:top}
+th{background:var(--surface);color:#164e54}
+.widget{margin:1.8rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:var(--surface)}
+.widget h3{margin-top:0}
+.control-row{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:flex-end;margin:.6rem 0}
+.control-row label{display:flex;flex-direction:column;font-size:.82rem;color:var(--subtle);gap:.25rem}
+.control-row input{font:inherit;font-size:.95rem;width:9rem;max-width:100%;padding:.4rem .5rem;border:1px solid var(--border);border-radius:.4rem;background:#fff;color:var(--ink)}
+button{font:inherit;font-size:.9rem;cursor:pointer;padding:.5rem .9rem;border:1px solid var(--accent);border-radius:.5rem;background:#fff;color:var(--accent);font-weight:600}
+button:hover{background:var(--accent);color:#fff}
+.status{margin:.8rem 0 0;font-weight:600;color:#164e54;min-height:1.6em;overflow-wrap:anywhere}
+.status .eq{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent)}
+.refs{font-size:.9rem;line-height:1.7;padding-left:1.3rem}
+.refs li{margin:.5rem 0}
+.footer-nav{margin-top:3.5rem;padding-top:1.4rem;border-top:2px solid var(--border);display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.footer-nav a{padding:.5rem 1.2rem;background:var(--surface);text-decoration:none;border-radius:2rem;font-weight:500;border:1px solid var(--border)}
+.footer-nav a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.math-inline{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",serif;vertical-align:-.05em}
+.math-equation{max-width:100%;min-width:0;margin:1.5rem 0;padding:.6rem 0;border-block:1px solid var(--border)}
+.math-scroll{display:block;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.math-scroll math[display="block"]{width:max-content;min-width:100%;font-size:clamp(1rem,2.2vw,1.25rem)}
+@media(max-width:900px){.layout{display:block;padding:2rem 1.2rem 4.5rem}.toc{position:static;max-height:none;overflow:visible;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+@media(max-width:480px){body{font-size:16px}.layout{padding:1.2rem 1rem 4rem}figure{padding:.55rem}section{margin-top:3rem}table{min-width:480px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+@media print{.layout{display:block;padding:0}.toc,.control-row,.skip-link,.footer-nav{display:none!important}figure{break-inside:avoid}a{color:#164e54}.math-scroll{overflow:visible}}
+</style>
 </head>
 <body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🖥️ 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
-            <li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
-            <li><a href="03.html">第3章 GPU硬件架构概览</a></li>
-            <li><a href="04.html" class="active">第4章 第一个CUDA内核</a></li>
-            <li><a href="05.html">第5章 线程层次结构</a></li>
-            <li><a href="06.html">第6章 内存模型基础</a></li>
-            <li><a href="07.html">第7章 同步机制入门</a></li>
-            <li><a href="08.html">第8章 共享内存深入</a></li>
-            <li><a href="09.html">第9章 全局内存优化</a></li>
-            <li><a href="10.html">第10章 常量内存与纹理内存</a></li>
-            <li><a href="11.html">第11章 原子操作与并行规约</a></li>
-            <li><a href="12.html">第12章 CUDA流与并发</a></li>
-            <li><a href="13.html">第13章 事件与性能计时</a></li>
-            <li><a href="14.html">第14章 Warp级别编程</a></li>
-            <li><a href="15.html">第15章 性能分析工具</a></li>
-            <li><a href="16.html">第16章 调试与错误处理</a></li>
-            <li><a href="17.html">第17章 性能优化方法论</a></li>
-            <li><a href="18.html">第18章 CUDA库生态</a></li>
-            <li><a href="19.html">第19章 CUDA Graph</a></li>
-            <li><a href="20.html">第20章 多GPU编程</a></li>
-            <li><a href="21.html">第21章 动态并行</a></li>
-            <li><a href="22.html">第22章 Cooperative Groups</a></li>
-            <li><a href="23.html">第23章 Nsight工具深度实战</a></li>
-            <li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
-            <li><a href="25.html">第25章 性能调优实战</a></li>
-            <li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
-            <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
-            <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
+<a class="skip-link" href="#content">跳转至正文</a>
+<div class="layout">
+<nav class="toc" aria-label="目录">
+<p class="toc-title">本章导航</p>
+<ol>
+<li><a href="#why">01 · 为什么是向量加法</a></li>
+<li><a href="#kernel">02 · 内核与启动语法</a></li>
+<li><a href="#hostdevice">03 · Host 与 Device</a></li>
+<li><a href="#pipeline">04 · 七步内存流程</a></li>
+<li><a href="#errors">05 · 错误检查</a></li>
+<li><a href="#compile">06 · 编译与运行流程</a></li>
+<li><a href="#pitfalls">07 · 一个关于方向的教训</a></li>
+<li><a href="#refs">08 · 参考文献</a></li>
+</ol>
+<details>
+<summary>全部 28 章</summary>
+<ul>
+<li><a href="01.html">第1章 GPU计算的前世今生</a></li>
+<li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
+<li><a href="03.html">第3章 GPU硬件架构概览</a></li>
+<li><a href="04.html" aria-current="page">第4章 第一个CUDA内核</a></li>
+<li><a href="05.html">第5章 线程层次结构</a></li>
+<li><a href="06.html">第6章 内存模型基础</a></li>
+<li><a href="07.html">第7章 同步机制入门</a></li>
+<li><a href="08.html">第8章 共享内存深入</a></li>
+<li><a href="09.html">第9章 全局内存优化</a></li>
+<li><a href="10.html">第10章 常量内存与纹理内存</a></li>
+<li><a href="11.html">第11章 原子操作与并行规约</a></li>
+<li><a href="12.html">第12章 CUDA流与并发</a></li>
+<li><a href="13.html">第13章 事件与性能计时</a></li>
+<li><a href="14.html">第14章 Warp级别编程</a></li>
+<li><a href="15.html">第15章 性能分析工具</a></li>
+<li><a href="16.html">第16章 调试与错误处理</a></li>
+<li><a href="17.html">第17章 性能优化方法论</a></li>
+<li><a href="18.html">第18章 CUDA库生态</a></li>
+<li><a href="19.html">第19章 CUDA Graph</a></li>
+<li><a href="20.html">第20章 多GPU编程</a></li>
+<li><a href="21.html">第21章 动态并行</a></li>
+<li><a href="22.html">第22章 Cooperative Groups</a></li>
+<li><a href="23.html">第23章 Nsight工具深度实战</a></li>
+<li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
+<li><a href="25.html">第25章 性能调优实战</a></li>
+<li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
+<li><a href="27.html">第27章 GPU计算未来趋势</a></li>
+<li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
+</ul>
+</details>
+</nav>
+<main id="content">
+<article>
+<header class="article-header">
+<h1>第一个 CUDA 内核</h1>
+<p class="dek">向量加法是 CUDA 的“Hello, World”：它短到一屏就能读完，却包含了内核定义、启动配置、Host/Device 内存管理与错误检查的完整骨架。</p>
+</header>
 
-        <h2>第一个CUDA内核</h2>
 
-        <p>大家好，我是你们的讲师。前两章我们做了两件事：搭好了CUDA开发环境，了解了GPU的内部构造。现在，是时候亲手写一段在GPU上跑的代码了。</p>
 
-        <p>在编程世界里，每个新领域的第一个程序都有一个传统——"Hello, World!"。在CUDA的世界里，这个位置属于<strong>向量加法</strong>（vector addition）。它简单到不能再简单：两个等长数组对应元素相加。但它包含了CUDA编程的所有核心要素：内核函数定义、内存管理、数据搬运、内核启动、结果回传。可以说，你搞懂了向量加法，就搞懂了CUDA编程80%的基本流程。</p>
+<section id="why" aria-labelledby="why-h">
+<h2 id="why-h">01 · 为什么是向量加法</h2>
 
-        <h3><code>__global__</code> 与内核启动语法 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code></h3>
+<p>前几章我们做完了三件事：搭好 CUDA 开发环境、看懂 GPU 内部构造、了解 GPU 从哪里来。现在该亲手写一段真正跑在 GPU 上的代码了。每个新领域的第一行程序都有传统，CUDA 里这个位置属于<strong>向量加法</strong>（vector addition）：两个等长数组逐元素相加。</p>
 
-        <p>先看一个最精简的CUDA内核和它的启动代码：</p>
+<p>它简单到不能再简单，却把 CUDA 编程的全部核心要素都摆了出来——内核函数定义、内存分配、数据搬运、内核启动、结果回传、错误检查。可以说，<em>向量加法里已经藏着后面所有章节的骨架</em>；把它拆透，再学优化就只是“换掉某一步”而已。</p>
+</section>
+
+        <section id="kernel" aria-labelledby="kernel-h">
+<h2 id="kernel-h">02 · 内核与启动语法</h2>
+
+<p>先看一个最精简的 CUDA 内核和它的启动代码：</p>
 
         <pre><code>// 一个极简的CUDA内核——向量加法
 __global__ void vecAdd(float *a, float *b, float *c) {
@@ -82,10 +176,65 @@ int main() {
             <strong>三尖括号扩展：</strong> <code>&lt;&lt;&lt;grid, block, sharedMemPerBlock, stream&gt;&gt;&gt;</code> 实际上有四个参数。后两个是可选的——<code>sharedMemPerBlock</code> 指定动态共享内存大小（第8章），<code>stream</code> 指定执行流（第12章）。在深入学习之前，只关心前两个就够了。
         </div>
 
-        <h3>Host与Device代码分离</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-launch-title fig-launch-desc" viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-launch-title">启动配置 &lt;&lt;&lt;gridSize, 256&gt;&gt;&gt; 到全局索引的映射</title>
+<desc id="fig-launch-desc">左侧是一维网格中的 gridSize 个线程块，块 b 被高亮；右侧展开块 b 的 256 个线程，线程 t 通过 idx 等于 b 乘 256 加 t 映射到数组元素 c 的对应位置。</desc>
+<rect x="16" y="24" width="240" height="260" rx="12" fill="#f3f9f6" stroke="#dce8e4"/>
+<text x="136" y="52" text-anchor="middle" font-size="15" fill="#53676d">grid：gridSize 个 block</text>
+<rect x="52" y="72" width="168" height="30" rx="6" fill="#fff" stroke="#dce8e4"/>
+<text x="136" y="92" text-anchor="middle" font-size="13" fill="#53676d">block 0</text>
+<rect x="52" y="112" width="168" height="30" rx="6" fill="#fff" stroke="#dce8e4"/>
+<text x="136" y="132" text-anchor="middle" font-size="13" fill="#53676d">…</text>
+<rect x="44" y="148" width="184" height="40" rx="8" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/>
+<text x="136" y="173" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">block b（本线程所在）</text>
+<rect x="52" y="200" width="168" height="30" rx="6" fill="#fff" stroke="#dce8e4"/>
+<text x="136" y="220" text-anchor="middle" font-size="13" fill="#53676d">…</text>
+<rect x="52" y="240" width="168" height="30" rx="6" fill="#fff" stroke="#dce8e4"/>
+<text x="136" y="260" text-anchor="middle" font-size="13" fill="#53676d">block gridSize-1</text>
+<line x1="258" y1="168" x2="300" y2="168" stroke="#d06d4d" stroke-width="2" marker-end="url(#ar)"/>
+<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#d06d4d"/></marker></defs>
+<rect x="312" y="24" width="432" height="260" rx="12" fill="#fdf1ec" stroke="#f0d4c8"/>
+<text x="528" y="52" text-anchor="middle" font-size="15" fill="#916c22">block b 的 256 个线程</text>
+<g font-size="12" text-anchor="middle">
+<rect x="340" y="80" width="72" height="42" rx="8" fill="#fff" stroke="#147f80"/><text x="376" y="98" fill="#147f80">thread 0</text><text x="376" y="114" fill="#53676d">idx=b·256</text>
+<rect x="424" y="80" width="72" height="42" rx="8" fill="#fff" stroke="#147f80"/><text x="460" y="98" fill="#147f80">thread 1</text><text x="460" y="114" fill="#53676d">+1</text>
+<rect x="508" y="80" width="72" height="42" rx="8" fill="#fff" stroke="#147f80"/><text x="544" y="98" fill="#147f80">thread t</text><text x="544" y="114" fill="#53676d">+t</text>
+<rect x="592" y="80" width="72" height="42" rx="8" fill="#fff" stroke="#147f80"/><text x="628" y="98" fill="#147f80">thread 255</text><text x="628" y="114" fill="#53676d">+255</text>
+</g>
+<text x="528" y="158" text-anchor="middle" font-size="14" fill="#203035">idx = blockIdx.x × blockDim.x + threadIdx.x = b × 256 + t</text>
+<g font-size="12" text-anchor="middle">
+<rect x="340" y="188" width="72" height="36" rx="6" fill="#fff" stroke="#dce8e4"/><text x="376" y="211" fill="#53676d">c[0]…</text>
+<rect x="424" y="188" width="72" height="36" rx="6" fill="#e4f2f0" stroke="#147f80"/><text x="460" y="211" fill="#147f80">c[b·256]</text>
+<rect x="508" y="188" width="72" height="36" rx="6" fill="#e4f2f0" stroke="#147f80"/><text x="544" y="211" fill="#147f80">c[b·256+1]</text>
+<rect x="592" y="188" width="72" height="36" rx="6" fill="#fff" stroke="#dce8e4"/><text x="628" y="211" fill="#53676d">…</text>
+</g>
+<line x1="376" y1="124" x2="376" y2="186" stroke="#d06d4d" stroke-width="1.5" marker-end="url(#ar)"/>
+<line x1="460" y1="124" x2="460" y2="186" stroke="#d06d4d" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="528" y="252" text-anchor="middle" font-size="12.5" fill="#53676d">每个线程写一个元素；相邻线程写相邻地址</text>
+</svg>
+<figcaption>启动配置与索引的对应关系（教学示意）。网格是“块的一维数组”，块是“线程的一维数组”；一个线程先查自己在块内的编号 <code>threadIdx.x</code>，再加上块在网格里的偏移 <code>blockIdx.x × blockDim.x</code>，就得到全局数组下标。</figcaption>
+</figure>
+
+<p>用公式写出来，每个线程的“地址”就是：</p>
+
+<div class="math-equation" role="group" aria-label="全局索引公式">
+<div class="math-scroll" data-math-scroll tabindex="0" role="region" aria-label="全局索引公式，可横向滚动">
+<math display="block" aria-label="全局索引 idx 等于 blockIdx.x 乘 blockDim.x 加 threadIdx.x">
+<mrow>
+<mi>idx</mi><mo>=</mo><mi>blockIdx</mi><mo>.</mo><mi>x</mi><mo>&#215;</mo><mi>blockDim</mi><mo>.</mo><mi>x</mi><mo>+</mo><mi>threadIdx</mi><mo>.</mo><mi>x</mi>
+</mrow>
+</math>
+</div>
+</div>
+</section>
+
+<section id="hostdevice" aria-labelledby="hostdevice-h">
+<h2 id="hostdevice-h">03 · Host 与 Device</h2>
 
         <p>CUDA程序中有两个截然不同的"世界"：<strong>Host</strong>（CPU及其内存）和 <strong>Device</strong>（GPU及其显存）。函数和变量可以用限定符表明它们属于哪个世界：</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="CUDA 限定符对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -122,6 +271,7 @@ int main() {
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <p>由于Host和Device有各自独立的内存空间，我们必须用CUDA API管理数据搬运。三个最核心的API是：</p>
 
@@ -130,6 +280,10 @@ int main() {
             <li><strong><code>cudaMemcpy()</code></strong>：在Host和Device之间拷贝数据，需要指定方向</li>
             <li><strong><code>cudaFree()</code></strong>：释放Device上的显存</li>
         </ul>
+</section>
+
+<section id="pipeline" aria-labelledby="pipeline-h">
+<h2 id="pipeline-h">04 · 七步内存流程</h2>
 
         <p>下面是一个完整的向量加法程序：</p>
 
@@ -192,13 +346,48 @@ int main() {
     return 0;
 }</code></pre>
 
-        <div class="highlight">
-            <strong>注意观察流程：</strong> 这是一个固定的七步模式——<strong>分配Host内存 → 分配Device内存 → Host到Device拷贝 → 启动内核 → Device到Host拷贝 → 验证 → 清理</strong>。未来几乎所有CUDA程序都遵循这个流程，不同的只是kernel内部的逻辑。
+        <div class="note">
+            <strong>注意观察流程：</strong> 这是一个固定的七步模式——<strong>分配Host内存 → 分配Device内存 → Host到Device拷贝 → 启动内核 → Device到Host拷贝 → 验证 → 清理</strong>。后面几乎所有 CUDA 程序都套用这个流程，变的只是内核内部的逻辑。
         </div>
 
-        <h3>CUDA错误检查</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-pipe-title fig-pipe-desc" viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-pipe-title">CUDA 程序的七步 Host/Device 数据流</title>
+<desc id="fig-pipe-desc">时序图：Host 分配内存并向 Device 拷贝；Device 分配显存并执行内核；结果拷回 Host 校验后双向释放。</desc>
+<defs><marker id="ph" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#d06d4d"/></marker><marker id="pd" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#147f80"/></marker></defs>
+<text x="170" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">Host (CPU)</text>
+<text x="580" y="26" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">Device (GPU)</text>
+<line x1="170" y1="38" x2="170" y2="312" stroke="#dce8e4" stroke-width="2"/>
+<line x1="580" y1="38" x2="580" y2="312" stroke="#dce8e4" stroke-width="2"/>
+<g font-size="12.5">
+<rect x="30" y="58" width="210" height="30" rx="6" fill="#f3f9f6" stroke="#147f80"/><text x="135" y="78" text-anchor="middle" fill="#203035">1  malloc(&#215;3)</text>
+<line x1="252" y1="106" x2="498" y2="106" stroke="#147f80" stroke-width="2" marker-end="url(#pd)"/><text x="375" y="100" text-anchor="middle" fill="#147f80">2  cudaMalloc(&#215;3)</text>
+<line x1="252" y1="141" x2="498" y2="141" stroke="#147f80" stroke-width="2" marker-end="url(#pd)"/><text x="375" y="135" text-anchor="middle" fill="#147f80">3  cudaMemcpy  H2D</text>
+<rect x="465" y="158" width="230" height="30" rx="6" fill="#fdf1ec" stroke="#d06d4d"/><text x="580" y="178" text-anchor="middle" fill="#203035">4  vecAdd&lt;&lt;&lt;grid,256&gt;&gt;&gt;</text>
+<line x1="498" y1="206" x2="252" y2="206" stroke="#d06d4d" stroke-width="2" marker-end="url(#ph)"/><text x="375" y="200" text-anchor="middle" fill="#d06d4d">5  cudaMemcpy  D2H</text>
+<rect x="30" y="223" width="210" height="30" rx="6" fill="#f3f9f6" stroke="#147f80"/><text x="135" y="243" text-anchor="middle" fill="#203035">6  校验结果</text>
+<rect x="30" y="271" width="210" height="30" rx="6" fill="#f3f9f6" stroke="#147f80"/><text x="135" y="291" text-anchor="middle" fill="#203035">7  free(&#215;3)</text>
+<rect x="465" y="271" width="230" height="30" rx="6" fill="#fdf1ec" stroke="#d06d4d"/><text x="580" y="291" text-anchor="middle" fill="#203035">7  cudaFree(&#215;3)</text>
+</g>
+</svg>
+<figcaption>七步流程的时序（教学示意）。第 4 步的内核启动是<b>异步</b>的：启动调用几乎立即返回，错误可能在被“记录”很久之后才暴露；因此在拷回结果（第 5 步）之前必须显式同步并检查。</figcaption>
+</figure>
 
-        <p>我刚学CUDA时犯过的最严重的错误是：<strong>从来不检查错误</strong>。CUDA API函数大部分返回 <code>cudaError_t</code> 类型，但很多人（包括曾经的我）会直接忽略返回值——毕竟CPU编程里malloc不检查返回值也挺常见的不是吗？</p>
+<div class="widget">
+<h3>动手：启动配置计算器</h3>
+<p>输入元素个数 <code>n</code> 与每块线程数 <code>blockSize</code>，看看网格要开多少个块、有多少线程会落到数组边界之外。</p>
+<div class="control-row">
+<label>n（元素个数）<input id="w-n" type="number" min="1" max="10000000" step="1" value="1000"></label>
+<label>blockSize（线程/块）<input id="w-b" type="number" min="1" max="1024" step="1" value="256"></label>
+</div>
+<p class="status" id="w-out" aria-live="polite"></p>
+</div>
+</section>
+
+<section id="errors" aria-labelledby="errors-h">
+<h2 id="errors-h">05 · 错误检查</h2>
+
+        <p>初学 CUDA 时最容易犯、后果也最严重的错误，是<strong>从不检查错误</strong>。CUDA API 大多返回 <code>cudaError_t</code>，但很多人（包括当年的我）直接忽略返回值——毕竟 CPU 编程里不检查 malloc 的人也很多。</p>
 
         <p>但GPU编程不一样。一个错误可能发生在调用之后的任意时刻（因为kernel是异步启动的），如果不显式检查，你很可能在错误发生很久之后才从"奇怪的结果"中发现问题。最好的习惯是：<strong>每次CUDA调用都检查错误</strong>。下面是一个通用的错误检查宏：</p>
 
@@ -229,7 +418,10 @@ CUDA_CHECK(cudaGetLastError());  // 捕获启动参数错误</code></pre>
             <strong>记住：kernel启动本身不会报错！</strong> 如果内核启动参数非法（比如blockSize超过设备限制），<code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 不会返回错误——错误会被"记录"下来，直到你调用 <code>cudaGetLastError()</code> 或下一次CUDA API调用时才会暴露。所以 <code>cudaGetLastError()</code> 加上 <code>cudaDeviceSynchronize()</code> 是最好的"查漏"组合。
         </div>
 
-        <h3>编译与运行流程</h3>
+</section>
+
+<section id="compile" aria-labelledby="compile-h">
+<h2 id="compile-h">06 · 编译与运行流程</h2>
 
         <p>你写好的 <code>.cu</code> 文件需要经过nvcc编译才能运行。nvcc的工作流程分为两步：</p>
 
@@ -267,28 +459,73 @@ nvcc -gencode arch=compute_80,code=sm_80 \
 
         <p><code>--ptxas-options=-v</code> 这个选项特别有用——它会在编译时打印出每个kernel的寄存器使用量、共享内存使用量、以及是否有寄存器溢出（spill）。这个信息对性能优化至关重要，我们会在后续章节反复用到它。</p>
 
-        <h3>第一个踩坑故事</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-nvcc-title fig-nvcc-desc" viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-nvcc-title">nvcc 的两段编译流程</title>
+<desc id="fig-nvcc-desc">源代码 .cu 交给 nvcc 前端后分两条路：主机 C++ 代码交给 gcc/clang，设备代码编译为 PTX；运行时驱动将 PTX 即时编译为目标 GPU 的 cubin 机器码。</desc>
+<defs><marker id="na" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#53676d"/></marker></defs>
+<rect x="16" y="104" width="104" height="52" rx="8" fill="#f3f9f6" stroke="#147f80"/><text x="68" y="136" text-anchor="middle" font-size="14" fill="#203035">vecAdd.cu</text>
+<line x1="122" y1="130" x2="156" y2="130" stroke="#53676d" stroke-width="2" marker-end="url(#na)"/>
+<rect x="158" y="104" width="112" height="52" rx="8" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="214" y="136" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">nvcc</text>
+<path d="M272 118 L310 72" stroke="#53676d" stroke-width="2" fill="none" marker-end="url(#na)"/>
+<path d="M272 142 L310 188" stroke="#53676d" stroke-width="2" fill="none" marker-end="url(#na)"/>
+<rect x="316" y="44" width="176" height="52" rx="8" fill="#fff" stroke="#7461ba"/><text x="404" y="68" text-anchor="middle" font-size="13" fill="#203035">主机 C++ 代码</text><text x="404" y="86" text-anchor="middle" font-size="12" fill="#53676d">gcc / clang / MSVC</text>
+<line x1="494" y1="70" x2="552" y2="70" stroke="#53676d" stroke-width="2" marker-end="url(#na)"/>
+<rect x="556" y="44" width="188" height="52" rx="8" fill="#fff" stroke="#dce8e4"/><text x="650" y="76" text-anchor="middle" font-size="13" fill="#203035">可执行文件（Host 端）</text>
+<rect x="316" y="164" width="176" height="52" rx="8" fill="#fff" stroke="#7461ba"/><text x="404" y="188" text-anchor="middle" font-size="13" fill="#203035">PTX（虚拟 ISA）</text><text x="404" y="206" text-anchor="middle" font-size="12" fill="#53676d">与架构无关</text>
+<line x1="494" y1="190" x2="552" y2="190" stroke="#d06d4d" stroke-width="2" marker-end="url(#na)"/>
+<rect x="556" y="164" width="188" height="52" rx="8" fill="#fdf1ec" stroke="#d06d4d"/><text x="650" y="188" text-anchor="middle" font-size="13" fill="#203035">cubin（机器码）</text><text x="650" y="206" text-anchor="middle" font-size="12" fill="#916c22">运行时驱动 JIT</text>
+</svg>
+<figcaption>nvcc 把主机代码与设备代码拆开后分别处理（教学示意）。设备侧的 PTX 是“中间态”：同一份 PTX 可以在不同架构的 GPU 上被驱动 JIT 成各自的 cubin，这正是交叉编译与向后兼容的基础。</figcaption>
+</figure>
+</section>
 
-        <p>我的第一个CUDA程序是一个向量加法。当时我写的时候漏掉了第三个参数 <code>cudaMemcpyHostToDevice</code> ——实际上我写的是 <code>cudaMemcpy(d_a, h_a, bytes, cudaMemcpyDeviceToHost)</code>，就是把方向搞反了。更糟的是，我没有检查返回值。结果呢？程序正常运行，没有崩溃，没有任何错误信息——但输出结果全部是0。</p>
+<section id="pitfalls" aria-labelledby="pitfalls-h">
+<h2 id="pitfalls-h">07 · 一个关于方向的教训</h2>
+
+        <p>我的第一个CUDA程序就是一个向量加法。当时漏写了第三个参数 <code>cudaMemcpyHostToDevice</code>——实际写成了 <code>cudaMemcpy(d_a, h_a, bytes, cudaMemcpyDeviceToHost)</code>，也就是把拷贝方向搞反了。更糟的是，我没有检查返回值。结果：程序不崩、不报错，但输出结果全部是 0。</p>
 
         <p>我花了整整一个下午去检查kernel逻辑、检查索引计算、检查线程数量——就是没想到去检查 <code>cudaMemcpy</code> 的方向。最后是一个同事路过看了一眼代码，说了一句："你这数据拷贝方向是不是反了？" 改完，结果正确。</p>
 
-        <p>这个教训我至今记忆犹新：<strong>CUDA程序99%的错误都出在Host-Device数据管理上，而不是kernel逻辑本身</strong>。从那以后我形成了两个习惯：一是永远用CUDA_CHECK宏包裹每个API调用；二是在写任何CUDA程序时，先让程序跑通"最小正确性验证"（比如打印前几个元素的值），再做任何优化。</p>
+        <p>这个教训我至今记忆犹新：<strong>初学者碰到的 CUDA 错误，绝大多数出在 Host-Device 数据管理上，而不是内核逻辑本身</strong>（这是教学经验总结，并非正式统计）。从那以后我养成了两个习惯：一是永远用 CUDA_CHECK 宏包裹每个 API 调用；二是在写任何 CUDA 程序时，先让程序跑通“最小正确性验证”（比如打印前几个元素的值），再做任何优化。</p>
 
-        <div class="warning">
+        <div class="note warn">
             <strong>永远不要假设数据已经在Device上了。</strong> 这是一个经典的思维陷阱：你刚做了一次 <code>cudaMemcpy</code> 把数据拷到了Device，但在下次kernel启动前，Host端的代码又修改了Host上的数据——然后你想当然地以为Device上的数据还是最新的。不是的。Host和Device是两个独立的内存空间，修改一端不会自动同步到另一端。如果记不清当前数据在哪一端，用 <code>cudaMemcpy</code> 显式同步一次。
         </div>
 
-        <p>好，你已经亲手写出了第一个CUDA程序并成功运行了它。下一章，我们将深入线程层次结构——grid、block、thread到底如何组织，索引怎么算，以及那些让初学者头疼的边界条件和block size选择策略。搞清楚这些，你以后写kernel就不会再"迷路"了。</p>
+        <p>至此，你已经亲手写出了第一个 CUDA 程序并成功运行。下一章我们深入<strong>线程层次结构</strong>：grid、block、thread 到底如何组织，索引怎么算，边界条件与 block size 又该怎么选。把这一章配合第 5 章一起读，以后写内核就不会再“迷路”。</p>
+</section>
+
+<section id="refs" aria-labelledby="refs-h">
+<h2 id="refs-h">08 · 参考文献</h2>
+
+<ul class="refs">
+<li>NVIDIA. <em>CUDA C++ Programming Guide</em>. https://docs.nvidia.com/cuda/cuda-c-programming-guide/ （内核限定符、启动配置 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code>、PTX 与 JIT 流程）</li>
+<li>NVIDIA. <em>CUDA Runtime API Reference</em>. https://docs.nvidia.com/cuda/cuda-runtime-api/ （<code>cudaMalloc</code> / <code>cudaMemcpy</code> / <code>cudaFree</code> / <code>cudaGetLastError</code> 语义）</li>
+<li>D. Kirk, W. Hwu. <em>Programming Massively Parallel Processors</em>. （Host/Device 执行模型与向量加法入门例子的经典教材参考）</li>
+</ul>
+</section>
 
         <div class="footer-nav">
             <a href="03.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="05.html">下一章 →</a>
         </div>
-
-    </div>
+</article>
+</main>
 </div>
-</div>
+<script>
+(function(){
+var nEl=document.getElementById('w-n'),bEl=document.getElementById('w-b'),out=document.getElementById('w-out');
+function fmt(x){return x.toLocaleString('en-US');}
+function update(){
+var n=Math.floor(Number(nEl.value)),b=Math.floor(Number(bEl.value));
+if(!isFinite(n)||!isFinite(b)||n<1||b<1){out.textContent='请输入 n ≥ 1 且 blockSize ≥ 1。';return;}
+var grid=Math.ceil(n/b),total=grid*b,waste=total-n,lastActive=n-(grid-1)*b;
+out.innerHTML='网格大小 gridSize = ceil(n / blockSize) = <span class="eq">'+fmt(grid)+'</span> 个块；共启动 <span class="eq">'+fmt(total)+'</span> 个线程，其中 <span class="eq">'+fmt(waste)+'</span> 个会被 idx &lt; n 边界检查拦下；最后一个块里有效线程数 = <span class="eq">'+fmt(lastActive)+'</span>。';
+}
+nEl.addEventListener('input',update);bEl.addEventListener('input',update);update();
+})();
+</script>
 </body>
 </html>
