@@ -1,320 +1,437 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第6章 内存模型基础</title>
-    <link rel="stylesheet" href="theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="description" content="CUDA 内存模型基础：寄存器、共享内存、全局内存的层次与延迟，合并访问与跨步访问的效率差异，统一内存与常见内存错误。">
+<title>第6章 内存模型基础</title>
+<style>
+:root{--paper:#fffdf9;--ink:#203035;--subtle:#53676d;--accent:#147f80;--transform:#d06d4d;--structure:#7461ba;--annotation:#916c22;--border:#dce8e4;--surface:#f3f9f6;--max-reading:820px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.85 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-underline-offset:.17em}
+a:hover{color:var(--transform)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[data-math-scroll]:focus-visible,.table-scroll:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.skip-link{position:absolute;left:1rem;top:-6rem;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:.4rem;z-index:10}
+.skip-link:focus{top:1rem}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:236px minmax(0,1fr);gap:clamp(1.5rem,4vw,4rem);padding:3rem 2rem 6rem}
+.toc{position:sticky;top:1.5rem;align-self:start;font-size:.82rem;line-height:1.5;max-height:calc(100vh - 3rem);overflow:auto}
+.toc-title{font-weight:700;letter-spacing:.06em;margin:0 0 .6rem;color:var(--ink)}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc a{display:block;text-decoration:none;color:var(--subtle);border-left:2px solid var(--border);padding:.36rem .7rem}
+.toc a:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.toc details{margin-top:1rem;border-top:1px solid var(--border);padding-top:.6rem}
+.toc summary{cursor:pointer;font-weight:600;color:var(--subtle)}
+.toc details ul{list-style:none;margin:.45rem 0 0;padding:0}
+.toc details ul a{font-size:.78rem;padding:.26rem .7rem}
+main,article,section{min-width:0}
+article{max-width:var(--max-reading)}
+section{scroll-margin-top:1.5rem;margin-top:3.6rem}
+.article-header{padding-bottom:.5rem}
+.article-header h1{font-size:clamp(2.1rem,5vw,3.2rem);line-height:1.15;letter-spacing:-.02em;margin:.4rem 0 1rem}
+.dek{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.65;color:var(--subtle);margin:0}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);line-height:1.4;margin:0 0 1.1rem}
+h3{font-size:1.18rem;line-height:1.5;margin:2rem 0 .7rem}
+p{margin:1rem 0}
+ul,ol{margin:1rem 0;padding-left:1.4rem}
+li{margin:.3rem 0}
+strong{font-weight:700}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+code{font-size:.88em;background:#eef4f1;padding:.08em .34em;border-radius:.3em;overflow-wrap:anywhere}
+pre{margin:1.3rem 0;padding:1.1rem;background:#1c3037;color:#e7f5ef;border-radius:.8rem;overflow-x:auto;line-height:1.6;font-size:.86rem}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+figure{margin:2rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:#fff}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.83rem;line-height:1.7;color:var(--subtle);border-top:1px solid var(--border);margin-top:.9rem;padding-top:.75rem}
+.note{margin:1.5rem 0;padding:.9rem 1.1rem;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 .5rem .5rem 0}
+.note.warn{border-left-color:var(--transform);background:#fdf1ec}
+.note.tip{border-left-color:var(--annotation);background:#fbf5e6}
+.table-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:.6rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+th,td{border-bottom:1px solid var(--border);text-align:left;padding:.6rem .7rem;vertical-align:top}
+th{background:var(--surface);color:#164e54}
+.widget{margin:1.8rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:var(--surface)}
+.widget h3{margin-top:0}
+.control-row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.6rem 0}
+button{font:inherit;font-size:.9rem;cursor:pointer;padding:.5rem .9rem;border:1px solid var(--accent);border-radius:.5rem;background:#fff;color:var(--accent);font-weight:600}
+button:hover{background:var(--accent);color:#fff}
+button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.status{margin:.8rem 0 0;font-weight:600;color:#164e54;min-height:1.6em;overflow-wrap:anywhere}
+.viz{display:flex;flex-wrap:wrap;gap:4px;margin:.6rem 0 0}
+.viz span{width:22px;height:22px;border-radius:4px;background:#d6f1eb;border:1px solid #147f80;display:inline-block}
+.viz span.hit{background:#ffd9b0;border-color:#d06d4d}
+.refs{font-size:.9rem;line-height:1.7;padding-left:1.3rem}
+.refs li{margin:.5rem 0}
+.footer-nav{margin-top:3.5rem;padding-top:1.4rem;border-top:2px solid var(--border);display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.footer-nav a{padding:.5rem 1.2rem;background:var(--surface);text-decoration:none;border-radius:2rem;font-weight:500;border:1px solid var(--border)}
+.footer-nav a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.math-inline{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",serif;vertical-align:-.05em}
+.math-equation{max-width:100%;min-width:0;margin:1.5rem 0;padding:.6rem 0;border-block:1px solid var(--border)}
+.math-scroll{display:block;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.math-scroll math[display="block"]{width:max-content;min-width:100%;font-size:clamp(1rem,2.2vw,1.25rem)}
+@media(max-width:900px){.layout{display:block;padding:2rem 1.2rem 4.5rem}.toc{position:static;max-height:none;overflow:visible;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+@media(max-width:480px){body{font-size:16px}.layout{padding:1.2rem 1rem 4rem}figure{padding:.55rem}section{margin-top:3rem}table{min-width:500px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+@media print{.layout{display:block;padding:0}.toc,.control-row,.skip-link,.footer-nav{display:none!important}figure{break-inside:avoid}a{color:#164e54}.math-scroll{overflow:visible}}
+</style>
 </head>
 <body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🖥️ 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
-            <li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
-            <li><a href="03.html">第3章 GPU硬件架构概览</a></li>
-            <li><a href="04.html">第4章 第一个CUDA内核</a></li>
-            <li><a href="05.html">第5章 线程层次结构</a></li>
-            <li><a href="06.html" class="active">第6章 内存模型基础</a></li>
-            <li><a href="07.html">第7章 同步机制入门</a></li>
-            <li><a href="08.html">第8章 共享内存深入</a></li>
-            <li><a href="09.html">第9章 全局内存优化</a></li>
-            <li><a href="10.html">第10章 常量内存与纹理内存</a></li>
-            <li><a href="11.html">第11章 原子操作与并行规约</a></li>
-            <li><a href="12.html">第12章 CUDA流与并发</a></li>
-            <li><a href="13.html">第13章 事件与性能计时</a></li>
-            <li><a href="14.html">第14章 Warp级别编程</a></li>
-            <li><a href="15.html">第15章 性能分析工具</a></li>
-            <li><a href="16.html">第16章 调试与错误处理</a></li>
-            <li><a href="17.html">第17章 性能优化方法论</a></li>
-            <li><a href="18.html">第18章 CUDA库生态</a></li>
-            <li><a href="19.html">第19章 CUDA Graph</a></li>
-            <li><a href="20.html">第20章 多GPU编程</a></li>
-            <li><a href="21.html">第21章 动态并行</a></li>
-            <li><a href="22.html">第22章 Cooperative Groups</a></li>
-            <li><a href="23.html">第23章 Nsight工具深度实战</a></li>
-            <li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
-            <li><a href="25.html">第25章 性能调优实战</a></li>
-            <li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
-            <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
-            <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
+<a class="skip-link" href="#content">跳转至正文</a>
+<div class="layout">
+<nav class="toc" aria-label="目录">
+<p class="toc-title">本章导航</p>
+<ol>
+<li><a href="#problem">01 · 为什么内存是瓶颈</a></li>
+<li><a href="#hierarchy">02 · 内存类型总览</a></li>
+<li><a href="#coalesce">03 · 全局内存与合并访问</a></li>
+<li><a href="#registers">04 · 寄存器与局部内存</a></li>
+<li><a href="#um">05 · 统一内存</a></li>
+<li><a href="#errors">06 · 常见内存错误</a></li>
+<li><a href="#refs">07 · 参考文献</a></li>
+</ol>
+<details>
+<summary>全部 28 章</summary>
+<ul>
+<li><a href="01.html">第1章 GPU计算的前世今生</a></li>
+<li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
+<li><a href="03.html">第3章 GPU硬件架构概览</a></li>
+<li><a href="04.html">第4章 第一个CUDA内核</a></li>
+<li><a href="05.html">第5章 线程层次结构</a></li>
+<li><a href="06.html" aria-current="page">第6章 内存模型基础</a></li>
+<li><a href="07.html">第7章 同步机制入门</a></li>
+<li><a href="08.html">第8章 共享内存深入</a></li>
+<li><a href="09.html">第9章 全局内存优化</a></li>
+<li><a href="10.html">第10章 常量内存与纹理内存</a></li>
+<li><a href="11.html">第11章 原子操作与并行规约</a></li>
+<li><a href="12.html">第12章 CUDA流与并发</a></li>
+<li><a href="13.html">第13章 事件与性能计时</a></li>
+<li><a href="14.html">第14章 Warp级别编程</a></li>
+<li><a href="15.html">第15章 性能分析工具</a></li>
+<li><a href="16.html">第16章 调试与错误处理</a></li>
+<li><a href="17.html">第17章 性能优化方法论</a></li>
+<li><a href="18.html">第18章 CUDA库生态</a></li>
+<li><a href="19.html">第19章 CUDA Graph</a></li>
+<li><a href="20.html">第20章 多GPU编程</a></li>
+<li><a href="21.html">第21章 动态并行</a></li>
+<li><a href="22.html">第22章 Cooperative Groups</a></li>
+<li><a href="23.html">第23章 Nsight工具深度实战</a></li>
+<li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
+<li><a href="25.html">第25章 性能调优实战</a></li>
+<li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
+<li><a href="27.html">第27章 GPU计算未来趋势</a></li>
+<li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
+</ul>
+</details>
+</nav>
+<main id="content">
+<article>
+<header class="article-header">
+<h1>内存模型基础</h1>
+<p class="dek">在 GPU 上，计算几乎是“免费”的——一次乘加只要一两个周期；而一次全局内存访问要几百个周期。这一章要建立的直觉是：性能问题大多不是算得慢，而是等数据等得久。</p>
+</header>
 
-        <h2>内存模型基础</h2>
+<section id="problem" aria-labelledby="problem-h">
+<h2 id="problem-h">01 · 为什么内存是瓶颈</h2>
+<p>有一个在 GPU 圈子里流传很广的说法：<strong>你 99% 的性能优化问题，归根结底都是内存访问问题</strong>。它背后的数量级差异是这样的——一个 FMA（融合乘加）指令消耗 1～2 个周期，而一次未命中的全局内存访问要 400～800 个周期。当线程把大部分时间花在等数据时，再多的并行也难以把吞吐填满。</p>
+<p>所以这一章的顺序是：先建立内存层次的整体图景（结构），再看决定全局内存效率的<strong>合并访问</strong>（机制），然后讨论寄存器溢出与统一内存这两个高频工程话题，最后收在真实的内存错误上。</p>
+<div class="note tip"><strong>本章的读法：</strong> 不要把延迟数字当成精确标称去背——它们随架构变化。你要记住的是<em>数量级</em>：片上存储比显存快两个数量级，而“访问模式”能在同一块显存上造成数倍的效率差。</div>
+</section>
 
-        <p>大家好，我是你们的讲师。在GPU编程中有一个广为人知的说法：<strong>你99%的性能优化问题，归根结底都是内存访问问题</strong>。计算本身在GPU上几乎是"免费"的——一个FMA（融合乘加）指令只消耗1-2个周期。但一次全局内存访问需要400-800个周期。如果你的kernel把大部分时间花在等数据上，那么再多的并行也无济于事。</p>
+<section id="hierarchy" aria-labelledby="hierarchy-h">
+<h2 id="hierarchy-h">02 · 内存类型总览</h2>
+<p>CUDA 程序能访问多种内存，它们的差别主要落在三件事上：<strong>作用域</strong>（谁能看见）、<strong>生命周期</strong>（活多久）和<strong>速度</strong>（离计算单元多远）。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="CUDA 内存类型总览表，可横向滚动">
+<table>
+<thead>
+<tr><th>内存类型</th><th>作用域</th><th>生命周期</th><th>速度（量级）</th><th>大小</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>寄存器</td><td>单线程</td><td>线程</td><td>~1 cycle</td><td>255 个/线程 (CC 8.0)</td><td>最快的存储，线程私有</td></tr>
+<tr><td>局部内存</td><td>单线程</td><td>线程</td><td>~400 cycles</td><td>无硬上限（但很慢）</td><td>寄存器溢出的“备胎”，物理上在全局内存</td></tr>
+<tr><td>共享内存</td><td>单 block</td><td>block</td><td>~5 cycles</td><td>~48–164 KB/SM</td><td>block 内线程通信渠道，片上存储</td></tr>
+<tr><td>全局内存</td><td>所有线程 + Host</td><td>程序控制</td><td>~400–800 cycles</td><td>数 GB 至 80 GB</td><td>最大的存储池，也最慢</td></tr>
+<tr><td>常量内存</td><td>所有线程 + Host</td><td>程序控制</td><td>~5 cycles (cache hit)</td><td>64 KB</td><td>只读，硬件广播优化，适合所有线程读同一份数据</td></tr>
+<tr><td>纹理内存</td><td>所有线程 + Host</td><td>程序控制</td><td>~100–400 cycles</td><td>取决于全局内存</td><td>只读，专用缓存，适合空间局部性强的访问</td></tr>
+</tbody>
+</table>
+</div>
 
-        <p>这一章，我带你系统了解CUDA的内存模型——全局内存、共享内存、寄存器、常量内存、纹理内存各有什么特点，以及最重要的：如何写出对内存友好的访问模式。</p>
+<figure>
+<svg role="img" aria-labelledby="fig-mem-title fig-mem-desc" viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-mem-title">CUDA 内存层次：越靠近计算单元越快越小</title>
+<desc id="fig-mem-desc">从寄存器到全局内存自上而下排列，越靠上容量越小、延迟越低；全局内存容量最大但延迟最高。</desc>
+<rect x="0" y="0" width="760" height="360" rx="18" fill="#ffffff"/>
+<text x="40" y="34" font-size="15" fill="#53676d">越靠上：越小、越快（离计算单元越近）</text>
+<g font-size="15" fill="#203035">
+<rect x="40" y="48" width="500" height="46" rx="10" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/>
+<text x="56" y="77">寄存器</text><text x="560" y="77" font-size="14" fill="#53676d">~1 cycle · 255 个/线程</text>
+<rect x="40" y="104" width="560" height="46" rx="10" fill="#cdeee7" stroke="#147f80" stroke-width="1.5"/>
+<text x="56" y="133">共享内存</text><text x="620" y="133" font-size="14" fill="#53676d">~5 cycles · per-SM KB 级</text>
+<rect x="40" y="160" width="620" height="46" rx="10" fill="#ffe6cf" stroke="#d06d4d" stroke-width="1.5"/>
+<text x="56" y="189">常量内存 / 纹理内存</text><text x="680" y="189" font-size="14" fill="#53676d">只读，各有专用缓存</text>
+<rect x="40" y="216" width="640" height="46" rx="10" fill="#ebe5ff" stroke="#7461ba" stroke-width="1.5"/>
+<text x="56" y="245">全局内存（L2 之后的主存）</text><text x="700" y="245" font-size="14" fill="#53676d">数 GB–80 GB</text>
+<rect x="40" y="272" width="680" height="46" rx="10" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/>
+<text x="56" y="301">每次访问的代价 Bottom-line：~400–800 cycles</text>
+</g>
+<path d="M746 40 V322" stroke="#9aa7ad" stroke-width="1.5" marker-end="url(#arr-dn)"/>
+<defs><marker id="arr-dn" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto"><path d="M0 0 L4 7 L8 0" fill="none" stroke="#9aa7ad" stroke-width="1.6"/></marker></defs>
+</svg>
+<figcaption>层次本身就是权衡：越靠近 SM 的存储越快越小，只能装下最热的数据。图中延迟为<strong>量级示意</strong>，随架构而变；条形宽度只表示容量量级，不是精确比例。</figcaption>
+</figure>
 
-        <h3>内存类型总览</h3>
+<div class="note"><strong>黄金法则：</strong> 把频繁访问的数据尽量放到层次结构中靠近计算单元的位置。典型策略是<strong>全局内存 → 共享内存 → 寄存器</strong>，每一步都对应几十到几百倍的延迟差异。</div>
+</section>
 
-        <p>第3章我们粗略提过内存层次，现在是时候系统梳理了。CUDA程序可以访问的内存类型如下：</p>
+<section id="coalesce" aria-labelledby="coalesce-h">
+<h2 id="coalesce-h">03 · 全局内存与合并访问</h2>
+<p>全局内存最常用，也最慢。但并非所有全局访问都一样慢——关键在<strong>合并访问</strong>（coalesced access）。</p>
+<p>当同一个 warp 的 32 个线程同时发出访问请求时，硬件会尝试把它们<strong>合并</strong>成尽量少的高效内存事务。若这 32 个线程访问的是连续地址（线程 0 读 <code>a[0]</code>、线程 1 读 <code>a[1]</code>……），一个 128 字节的事务就能覆盖全部访问；若地址彼此散开，硬件可能要为几乎每个线程单独开一个事务，效率随之成倍下降。</p>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>内存类型</th>
-                    <th>作用域</th>
-                    <th>生命周期</th>
-                    <th>速度</th>
-                    <th>大小</th>
-                    <th>说明</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>寄存器</td>
-                    <td>单个线程</td>
-                    <td>线程生命周期</td>
-                    <td>~1 cycle</td>
-                    <td>255个/线程 (CC 8.0)</td>
-                    <td>最快的存储，线程私有</td>
-                </tr>
-                <tr>
-                    <td>局部内存</td>
-                    <td>单个线程</td>
-                    <td>线程生命周期</td>
-                    <td>~400 cycles</td>
-                    <td>无限制（但很慢）</td>
-                    <td>寄存器溢出的"备胎"，物理上在全局内存中</td>
-                </tr>
-                <tr>
-                    <td>共享内存</td>
-                    <td>单个block</td>
-                    <td>block生命周期</td>
-                    <td>~5 cycles</td>
-                    <td>~48-164 KB/SM</td>
-                    <td>block内线程间的通信渠道，片上存储</td>
-                </tr>
-                <tr>
-                    <td>全局内存</td>
-                    <td>所有线程 + Host</td>
-                    <td>程序控制</td>
-                    <td>~400-800 cycles</td>
-                    <td>4-80 GB</td>
-                    <td>最大的存储池，但最慢</td>
-                </tr>
-                <tr>
-                    <td>常量内存</td>
-                    <td>所有线程 + Host</td>
-                    <td>程序控制</td>
-                    <td>~5 cycles (cache hit)</td>
-                    <td>64 KB</td>
-                    <td>只读，硬件广播优化，适合所有线程读相同数据</td>
-                </tr>
-                <tr>
-                    <td>纹理内存</td>
-                    <td>所有线程 + Host</td>
-                    <td>程序控制</td>
-                    <td>~100-400 cycles</td>
-                    <td>取决于全局内存</td>
-                    <td>只读，有专用的缓存，适合空间局部性强的访问</td>
-                </tr>
-            </tbody>
-        </table>
+<figure>
+<svg role="img" aria-labelledby="fig-coal-title fig-coal-desc" viewBox="0 0 760 440" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-coal-title">合并访问与跨步访问的事务数对比</title>
+<desc id="fig-coal-desc">上：8 个线程连续访问，合并为 1 个 128 字节事务。下：8 个线程跨步访问，落到 8 个不连续段，需要更多事务。</desc>
+<rect x="0" y="0" width="760" height="440" rx="18" fill="#ffffff"/>
+<text x="40" y="36" font-size="16" fill="#147f80" font-weight="700">合并访问：线程按下标连续读取</text>
+<g font-size="14" text-anchor="middle" fill="#203035">
+<rect x="60" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="92" y="76">t0</text>
+<rect x="140" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="172" y="76">t1</text>
+<rect x="220" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="252" y="76">t2</text>
+<rect x="300" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="332" y="76">t3</text>
+<rect x="380" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="412" y="76">t4</text>
+<rect x="460" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="492" y="76">t5</text>
+<rect x="540" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="572" y="76">t6</text>
+<rect x="620" y="52" width="64" height="38" rx="8" fill="#d6f1eb" stroke="#147f80" stroke-width="1.5"/><text x="652" y="76">t7</text>
+</g>
+<g stroke="#147f80" stroke-width="1.5">
+<path d="M92 90 V128"/><path d="M172 90 V128"/><path d="M252 90 V128"/><path d="M332 90 V128"/>
+<path d="M412 90 V128"/><path d="M492 90 V128"/><path d="M572 90 V128"/><path d="M652 90 V128"/>
+</g>
+<rect x="60" y="128" width="624" height="40" rx="8" fill="#cdeee7" stroke="#147f80" stroke-width="2"/>
+<text x="372" y="153" font-size="15" text-anchor="middle" fill="#203035">合并为 1 个 128B 事务（高效）</text>
+<line x1="40" y1="196" x2="720" y2="196" stroke="#dce8e4" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="40" y="232" font-size="16" fill="#d06d4d" font-weight="700">跨步访问：线程跳着读取（stride &gt; 1）</text>
+<g font-size="13" fill="#53676d">
+<rect x="60" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="100" y="274" text-anchor="middle" font-size="14" fill="#203035">t0 → a[0]</text>
+<rect x="160" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="200" y="274" text-anchor="middle" font-size="14" fill="#203035">t1 → a[2]</text>
+<rect x="260" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="300" y="274" text-anchor="middle" font-size="14" fill="#203035">t2 → a[4]</text>
+<rect x="360" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="400" y="274" text-anchor="middle" font-size="14" fill="#203035">t3 → a[6]</text>
+<rect x="460" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="500" y="274" text-anchor="middle" font-size="14" fill="#203035">t4 → a[8]</text>
+<rect x="560" y="252" width="80" height="34" rx="8" fill="#ffecd9" stroke="#d06d4d" stroke-width="1.5"/><text x="600" y="274" text-anchor="middle" font-size="14" fill="#203035">t5 → a[10]</text>
+</g>
+<text x="40" y="322" font-size="14" fill="#53676d">数据地址在显存中散布：每段落进不同的事务</text>
+<g>
+<rect x="60" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="90" y="369" font-size="13" text-anchor="middle" fill="#203035">段 0</text>
+<rect x="176" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="206" y="369" font-size="13" text-anchor="middle" fill="#203035">段 1</text>
+<rect x="292" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="322" y="369" font-size="13" text-anchor="middle" fill="#203035">段 2</text>
+<rect x="408" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="438" y="369" font-size="13" text-anchor="middle" fill="#203035">段 3</text>
+<rect x="524" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="554" y="369" font-size="13" text-anchor="middle" fill="#203035">段 4</text>
+<rect x="640" y="344" width="60" height="40" rx="8" fill="#f0d9d2" stroke="#d06d4d" stroke-width="1.5"/><text x="670" y="369" font-size="13" text-anchor="middle" fill="#203035">段 5</text>
+</g>
+<text x="40" y="412" font-size="14" fill="#d06d4d">多个独立事务 → 有效带宽随 stride 成比例下降</text>
+</svg>
+<figcaption>上图每个线程把自己的访问交给硬件，由硬件合并；下图地址散开，无法合并。图中只画了 6～8 个线程以便看清，真实 warp 是 32 个线程，而 128B 事务对应的正是 32 个连续 4 字节元素。</figcaption>
+</figure>
 
-        <div class="highlight">
-            <strong>黄金法则：</strong> 尽可能将频繁访问的数据放在层次结构中尽可能低（靠近计算单元）的位置。一个典型的策略是：<strong>全局内存 → 共享内存 → 寄存器</strong>，每步都是几十到几百倍的性能差异。
-        </div>
+<p>同样的数组、同样的运算，仅因访问模式不同，有效带宽会差出好几倍：</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="不同访问模式的效率表，可横向滚动">
+<table>
+<thead><tr><th>访问模式</th><th>步长</th><th>有效带宽（量级示意）</th><th>效率</th></tr></thead>
+<tbody>
+<tr><td>连续（合并）</td><td>1</td><td>~1550 GB/s</td><td>100%</td></tr>
+<tr><td>跨步</td><td>2</td><td>~775 GB/s</td><td>50%</td></tr>
+<tr><td>跨步</td><td>4</td><td>~387 GB/s</td><td>25%</td></tr>
+<tr><td>随机</td><td>—</td><td>~50–200 GB/s</td><td>3–13%</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note tip"><strong>表头为什么写“量级示意”？</strong> 表中 <code>~1550 GB/s</code> 是 A100 40GB 的标称 HBM 带宽量级（其数值随显存规格而变），而跨步行恰好折半、四分之一，是“事务数随 stride 线性增长”这一模型的<em>理想示意</em>，并非某次实测结果。你要带走的是<strong>成比例下降</strong>这个结论，而不是某个绝对值。</div>
 
-        <h3>全局内存与合并访问</h3>
+<div class="widget">
+<h3>动手看一看：stride 如何决定事务数与效率</h3>
+<p>选择步长，观察一个 warp 的 32 次访问会落成多少个内存事务。模型假设：连续访问合并为 1 个 128B 事务；整数步长时事务数随 stride 成比例增加。</p>
+<div class="control-row" role="group" aria-label="选择访问步长">
+<button type="button" data-stride="1" aria-pressed="true">stride = 1</button>
+<button type="button" data-stride="2" aria-pressed="false">stride = 2</button>
+<button type="button" data-stride="4" aria-pressed="false">stride = 4</button>
+<button type="button" data-stride="8" aria-pressed="false">stride = 8</button>
+<button type="button" data-stride="r" aria-pressed="false">随机访问</button>
+</div>
+<div class="viz" id="calc-viz" aria-hidden="true"></div>
+<p class="status" id="calc-out" role="status" aria-live="polite"></p>
+</div>
 
-        <p>全局内存（global memory）是CUDA程序中最常用、但也是最慢的内存。然而，并不是所有对全局内存的访问都一样慢——关键在于<strong>合并访问</strong>（coalesced access）。</p>
+<div class="math-equation" role="group" aria-label="合并访问效率公式">
+<div class="math-scroll" data-math-scroll tabindex="0" role="region" aria-label="合并访问效率公式，可横向滚动">
+<math display="block" aria-label="有效带宽效率约等于 stride 的倒数">
+<mrow>
+<mi>效率</mi><mo>&#8776;</mo>
+<mfrac><mn>1</mn><mi>stride</mi></mfrac>
+</mrow>
+</math>
+</div>
+</div>
+<p class="refs" style="list-style:none;padding:0;font-size:.9rem;color:var(--subtle)">当 stride 取整数且访问对齐时，触及的 128B 事务数大致与 stride 成正比，因此效率约为 <code>1/stride</code>；随机访问退化到“几乎每线程一个事务”，效率降到个位数百分比。（教学示意）</p>
 
-        <p>当同一个warp（32个线程）同时发出内存请求时，硬件会尝试将这些请求<strong>合并</strong>成尽可能少的、高效的内存事务。如果32个线程访问的地址是连续的（比如线程0访问a[0]，线程1访问a[1]，以此类推），那么硬件可以用一个宽128字节的内存事务搞定——这是最理想的情况。</p>
-
-        <p>但如果地址是分散的（比如线程0访问a[0]，线程1访问a[32]，线程2访问a[64]），硬件可能需要32个独立的内存事务——效率降低32倍。</p>
-
-        <pre><code>// 合并访问 —— 高效
+<pre><code>// 合并访问 —— 高效
 __global__ void coalesced_kernel(float *data, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx &lt; n) {
-        // 线程0 访问 data[0], 线程1 访问 data[1], ...
-        // 连续地址 —— 完美合并访问
-        data[idx] = data[idx] * 2.0f;
+        data[idx] = data[idx] * 2.0f;   // t0→data[0], t1→data[1] ... 完美合并
     }
 }
 
-// 非合并访问 —— 低效
+// 跨步访问 —— 低效
 __global__ void strided_kernel(float *data, int n, int stride) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx * stride &lt; n) {
-        // 线程0 访问 data[0], 线程1 访问 data[stride], ...
-        // 地址间隔 stride —— 无法合并
-        data[idx * stride] = data[idx * stride] * 2.0f;
+        data[idx * stride] = data[idx * stride] * 2.0f;  // 地址间隔 stride，无法合并
     }
 }</code></pre>
+<div class="note tip"><strong>一个类比：</strong> 合并访问像推着车沿书架按编号取书——走一趟就取完；跨步访问像在书架间来回跳着各取一本——大部分时间花在跑动上，而不是看书。</div>
+</section>
 
-        <p>下面是一个实验数据——在A100上对同一个数组做同样的操作，仅因为访问模式不同：</p>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>访问模式</th>
-                    <th>步长</th>
-                    <th>有效带宽 (GB/s)</th>
-                    <th>效率</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>连续（合并）</td>
-                    <td>1</td>
-                    <td>~1550</td>
-                    <td>100%</td>
-                </tr>
-                <tr>
-                    <td>间隔</td>
-                    <td>2</td>
-                    <td>~775</td>
-                    <td>50%</td>
-                </tr>
-                <tr>
-                    <td>间隔</td>
-                    <td>4</td>
-                    <td>~387</td>
-                    <td>25%</td>
-                </tr>
-                <tr>
-                    <td>随机</td>
-                    <td>—</td>
-                    <td>~50-200</td>
-                    <td>3-13%</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="tip">
-            <strong>直观理解：</strong> 把合并访问想象成"在图书馆按编号顺序取书"——你推着车沿书架走一趟就能取完所有书。非合并访问则是"随机在不同书架上各取一本"——你需要在书架间来回跑，大部分时间花在路上而不是看书本内容上。
-        </div>
-
-        <h3>寄存器与局部内存</h3>
-
-        <p>寄存器是GPU上最快的存储——没有之一。每个线程可以使用的寄存器数量由硬件决定（例如在CC 8.0上最多255个）。如果你的kernel使用的寄存器数量超过了限制，编译器会把超出的部分"溢出"到<strong>局部内存</strong>（local memory）中。局部内存物理上存在全局内存里，速度相差两个数量级。</p>
-
-        <p>如何检查寄存器使用量？</p>
-
-        <pre><code># 编译时查看寄存器统计
+<section id="registers" aria-labelledby="registers-h">
+<h2 id="registers-h">04 · 寄存器与局部内存</h2>
+<p>寄存器是 GPU 上最快的存储，没有之一。每个线程可用的寄存器数量由硬件决定（例如 CC 8.0 上最多 255 个）。当 kernel 需要的寄存器超过上限，编译器会把溢出的部分<strong>溢出到局部内存</strong>（local memory）。局部内存物理上位于全局内存，速度相差两个数量级。</p>
+<pre><code># 编译时查看寄存器统计
 nvcc --ptxas-options=-v -arch=sm_80 -o mykernel mykernel.cu
 
 # 输出示例：
 # ptxas info: Used 32 registers, 8192 bytes smem, 320 bytes cmem[0]</code></pre>
-
-        <p>"Used 32 registers"说明每个线程用了32个寄存器。如果它超过255，就会开始spill。即使没有超过，高寄存器使用也会降低每个SM能容纳的线程数（因为寄存器文件是SM上的固定资源），从而影响占用率。</p>
-
-        <pre><code>// 容易导致寄存器溢出的模式 —— 在kernel内声明大数组
+<p>寄存器用量还会反过来限制占用率：寄存器文件是 SM 上的固定资源，单个线程用得多，能同时驻留的线程就少。</p>
+<div class="note"><strong>算一笔账：</strong> CC 8.0 每个 SM 有 65536 个寄存器。若每个线程用 32 个寄存器，一个 SM 最多可容纳 65536 ÷ 32 = 2048 个线程；若每线程用 128 个，则只剩 512 个——占用率从 100% 降到 25%。这正是“降低寄存器使用量”常被列为优化目标的原因。</div>
+<pre><code>// 容易导致寄存器溢出的写法 —— 在 kernel 内声明大数组
 __global__ void bad_kernel(float *data) {
-    // 这个数组看似在"栈上"，但实际上它需要的寄存器太多
-    // 编译器被迫将其放入local memory（慢！）
-    float temp[256];
-    for (int i = 0; i &lt; 256; i++) {
-        temp[i] = data[i * 1000];  // 各种计算...
-    }
-    // ...
+    float temp[256];               // 需要的寄存器太多，被迫放进 local memory（慢）
+    for (int i = 0; i &lt; 256; i++) temp[i] = data[i * 1000];
 }
 
-// 更好的方式 —— 用小数组，复用寄存器
+// 更好的写法 —— 复用少量寄存器
 __global__ void better_kernel(float *data) {
-    float sum = 0.0f;           // 1个寄存器
-    for (int i = 0; i &lt; 256; i++) {
-        sum += data[i * 1000];  // 循环中复用同一个寄存器
-    }
-    // ...
+    float sum = 0.0f;              // 1 个寄存器，循环中反复使用
+    for (int i = 0; i &lt; 256; i++) sum += data[i * 1000];
 }</code></pre>
+<p>降低寄存器用量的常用手段：把反复使用的子表达式提取为临时变量（编译器已做很多，手工有时仍有帮助）；用 <code>-maxrregcount=N</code> 强制限制每线程寄存器数（但压得太狠会增加 spill，反而更慢）；用共享内存替代线程私有的大数组。</p>
+</section>
 
-        <div class="highlight">
-            <strong>255个寄存器的上限意味着什么？</strong> 假设你的kernel每个线程用32个寄存器（很常见），那么在A100（每个SM 65536个寄存器）上，一个SM最多可容纳 65536 / 32 = 2048 个线程。如果每个线程用128个寄存器，则最多容纳 65536 / 128 = 512 个线程——占用率从100%降到了25%。这就是为什么"降低寄存器使用量"是CUDA优化的重要目标之一。
-        </div>
+<section id="um" aria-labelledby="um-h">
+<h2 id="um-h">05 · 统一内存入门</h2>
+<p>从 CUDA 6.0 开始，NVIDIA 引入了<strong>统一内存</strong>（Unified Memory, UM）：用 <code>cudaMallocManaged()</code> 分配一段 CPU 和 GPU 都能直接访问的内存，你不再手动 <code>cudaMemcpy</code>，系统按需迁移数据。</p>
 
-        <p>降低寄存器使用量的常用技巧：</p>
-        <ul>
-            <li>将多次使用的子表达式提取为临时变量（编译器已经做了很多，但手动做有时也有帮助）</li>
-            <li>使用 <code>-maxrregcount=N</code> 编译选项强制限制每个线程的寄存器数（但过度限制会导致更多spilling，反而更慢）</li>
-            <li>用共享内存替代线程私有的大数组</li>
-        </ul>
+<figure>
+<svg role="img" aria-labelledby="fig-um-title fig-um-desc" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-um-title">统一内存按页在 CPU 内存与 GPU 显存间迁移</title>
+<desc id="fig-um-desc">统一地址空间给出同一指针；访问触发 page fault 时，驱动按 4KB 页在 CPU 内存与 GPU 显存之间搬运数据。</desc>
+<rect x="0" y="0" width="760" height="300" rx="18" fill="#ffffff"/>
+<rect x="40" y="30" width="680" height="34" rx="10" fill="#f3f9f6" stroke="#147f80" stroke-width="1.5"/>
+<text x="380" y="53" font-size="15" text-anchor="middle" fill="#147f80" font-weight="700">统一地址空间：CPU 与 GPU 看到同一个指针 a</text>
+<rect x="40" y="96" width="250" height="150" rx="12" fill="#d6f1eb" stroke="#147f80" stroke-width="2"/>
+<text x="165" y="128" font-size="15" text-anchor="middle" fill="#203035" font-weight="700">CPU 内存</text>
+<text x="165" y="156" font-size="14" text-anchor="middle" fill="#53676d">页 P</text>
+<rect x="470" y="96" width="250" height="150" rx="12" fill="#ebe5ff" stroke="#7461ba" stroke-width="2"/>
+<text x="595" y="128" font-size="15" text-anchor="middle" fill="#203035" font-weight="700">GPU 显存</text>
+<text x="595" y="156" font-size="14" text-anchor="middle" fill="#53676d">页 P 的副本</text>
+<path d="M300 145 H460" stroke="#d06d4d" stroke-width="2" marker-end="url(#arr-r)"/>
+<path d="M460 200 H300" stroke="#d06d4d" stroke-width="2" marker-end="url(#arr-l)"/>
+<text x="380" y="138" font-size="13" text-anchor="middle" fill="#d06d4d">page fault：迁入</text>
+<text x="380" y="224" font-size="13" text-anchor="middle" fill="#d06d4d">迁回 CPU</text>
+<defs>
+<marker id="arr-r" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9" fill="none" stroke="#d06d4d" stroke-width="1.6"/></marker>
+<marker id="arr-l" markerWidth="9" markerHeight="9" refX="2" refY="4.5" orient="auto"><path d="M9 0 L0 4.5 L9 9" fill="none" stroke="#d06d4d" stroke-width="1.6"/></marker>
+</defs>
+<text x="380" y="278" font-size="13" text-anchor="middle" fill="#53676d">页粒度 4KB：CPU 与 GPU 同时对同一页读写时，硬件不保证一致性</text>
+</svg>
+<figcaption>统一内存靠 page fault 驱动迁移：GPU 访问不在显存中的页 → 迁入；CPU 访问在显存中的页 → 迁回。粒度是 4KB 页，这也是多线程 Host 访问时容易踩坑的根源。</figcaption>
+</figure>
 
-        <h3>统一内存（Unified Memory）入门</h3>
-
-        <p>从CUDA 6.0开始，NVIDIA引入了<strong>统一内存</strong>（Unified Memory, UM），通过 <code>cudaMallocManaged()</code> 分配一段CPU和GPU都可以直接访问的内存。你不再需要手动调用 <code>cudaMemcpy</code> 搬运数据——系统会自动管理数据迁移。</p>
-
-        <pre><code>// 统一内存示例 —— 不需要手动拷贝
+<pre><code>#include &lt;cuda_runtime.h&gt;
 #include &lt;stdio.h&gt;
-#include &lt;cuda_runtime.h&gt;
-
-__global__ void vecAdd(float *a, float *b, float *c, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx &lt; n) {
-        c[idx] = a[idx] + b[idx];
-    }
-}
 
 int main() {
     int n = 1 &lt;&lt; 20;
     size_t bytes = n * sizeof(float);
-
-    // 使用 cudaMallocManaged 代替 cudaMalloc + malloc
     float *a, *b, *c;
     cudaMallocManaged(&amp;a, bytes);
     cudaMallocManaged(&amp;b, bytes);
     cudaMallocManaged(&amp;c, bytes);
 
-    // Host端初始化 —— 直接在CPU上访问
-    for (int i = 0; i &lt; n; i++) {
-        a[i] = i * 1.0f;
-        b[i] = (n - i) * 1.0f;
-    }
+    for (int i = 0; i &lt; n; i++) { a[i] = i * 1.0f; b[i] = (n - i) * 1.0f; }
 
-    // 启动内核 —— 系统自动将数据迁移到GPU
     int blockSize = 256;
     int gridSize = (n + blockSize - 1) / blockSize;
     vecAdd&lt;&lt;&lt;gridSize, blockSize&gt;&gt;&gt;(a, b, c, n);
+    cudaDeviceSynchronize();      // 等待 GPU，再在 Host 上读结果
 
-    // 等待GPU完成，然后访问结果
-    cudaDeviceSynchronize();
-
-    // Host端验证 —— 系统自动将结果迁移回CPU
-    for (int i = 0; i &lt; 10; i++) {
-        printf("c[%d] = %f\n", i, c[i]);
-    }
-
-    cudaFree(a);
-    cudaFree(b);
-    cudaFree(c);
+    cudaFree(a); cudaFree(b); cudaFree(c);
     return 0;
 }</code></pre>
+<div class="note tip"><strong>什么时候用统一内存？</strong> 它非常适合<strong>原型开发</strong>与<strong>不规则访问</strong>（树、图、稀疏结构），能省去繁琐的手动管理。但在追求极致性能时，page fault 处理的开销可能不可接受；而 <strong>CPU 多线程访问 UM 需要格外小心</strong>——多个 CPU 线程同时改写 UM 数据可能引发数据竞争。</div>
+</section>
 
-        <p>统一内存的原理是<strong>按页迁移</strong>（page fault driven migration）。当GPU访问一个尚未在显存中的页面时，触发page fault，驱动把该页从CPU内存拷贝到显存。当CPU访问一个在显存中的页面时，同样触发page fault使数据迁移回来。</p>
+<section id="errors" aria-labelledby="errors-h">
+<h2 id="errors-h">06 · 常见内存错误</h2>
+<p>内存相关的 bug 在 CUDA 里最常见，也最难查。下面是一个典型场景：用 <code>cudaMallocManaged</code> 分配粒子位置数组，Host 端一个线程写、Device 端并行读写。程序“看起来”正常，结果却总在边缘上偏差。根因是<strong>数据竞争</strong>——CPU 的写与 GPU 的读可能同时发生（经由 page fault 机制），GPU 读到的是更新到一半的数据。</p>
+<p>这正是 UM 在 CPU 多线程场景下的经典陷阱：页粒度是 4KB，若 CPU 与 GPU 同时访问同一页内的不同位置，硬件无法提供一致性保证。常见修复是用 <code>cudaMemAdvise()</code> 与 <code>cudaMemPrefetchAsync()</code> 显式引导数据放置与迁移，或干脆回到手动 <code>cudaMalloc</code>/<code>cudaMemcpy</code>。</p>
+<div class="note warn"><strong>非法内存访问（Illegal Memory Access）最“无声”。</strong> 它往往不立即崩溃，而是在你完全没料到的时候抛出一个莫名其妙的错误。常见触发：数组越界、未初始化指针、释放后使用。更糟的情况是越界写到别的有效数据上——程序照常跑、结果却错，还不给任何提示。所以两条纪律要刻进习惯：<strong>每个内存访问都核对边界，每次 CUDA API 调用都检查返回值</strong>。</div>
+<p>到这里，内存模型的全局图景已经铺开：从最快的寄存器到最慢的全局内存、从合并访问到统一内存、再到典型陷阱。但有一种内存我们只点了名——<strong>共享内存</strong>。它是 CUDA 性能优化的核心，值得用一整章来展开，这就是下一章。</p>
+</section>
 
-        <div class="tip">
-            <strong>什么时候用统一内存？</strong> UM非常适合<strong>原型开发</strong>——省去了繁琐的手动内存管理，代码更干净。对于<strong>不规则的数据访问模式</strong>（如树、图、稀疏数据），UM也比手动管理更简单。但在追求极致性能的生产环境中，UM的开销（page fault处理）可能是不可接受的。另外，<strong>CPU端的多线程访问UM需要格外小心</strong>——多个CPU线程同时修改UM数据可能导致数据竞争。
-        </div>
+<section id="refs" aria-labelledby="refs-h">
+<h2 id="refs-h">07 · 参考文献</h2>
+<ol class="refs">
+<li>NVIDIA，《CUDA C++ Programming Guide》，“Device Memory Spaces”“Coalesced Access to Global Memory”“Unified Memory Programming”等节。<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html">docs.nvidia.com/cuda/cuda-c-programming-guide</a></li>
+<li>NVIDIA，《CUDA C++ Best Practices Guide》，“Memory Optimizations” 一节。<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html">docs.nvidia.com/cuda/cuda-c-best-practices-guide</a></li>
+<li>J. Nickolls, I. Buck, M. Garland, K. Skadron，“Scalable Parallel Programming with CUDA”，<em>ACM Queue</em> 6(2), 2008。<a href="https://doi.org/10.1145/1365490.1365500">doi.org/10.1145/1365490.1365500</a></li>
+</ol>
+<div class="note tip"><strong>教学示意声明：</strong> 内存延迟（cycle 数）与“有效带宽”表均为量级示意，随架构与显存规格变化；页粒度 4KB、128B 事务、warp=32 线程为硬件规范。统一内存示例代码省略了 <code>vecAdd</code> 定义与错误检查，仅为说明数据迁移流程。</div>
+</section>
 
-        <h3>常见内存错误</h3>
-
-        <p>内存相关的bug在CUDA中最为常见，也最难排查。下面是我亲身经历的一个典型故事：</p>
-
-        <p>几年前我在开发一个物理模拟程序，使用 <code>cudaMallocManaged</code> 分配了一个粒子位置数组。Host端一个线程负责生成新粒子（写数组），Device端并行计算粒子运动（读写数组）。程序看起来运行正常，但结果总是"差不多对但偶尔有偏差"。我花了将近一周定位问题：<strong>数据竞争</strong>——CPU端的写操作和GPU端的读操作可能同时发生（通过page fault机制），导致GPU读到一半更新的数据。</p>
-
-        <p>这就是使用UM在CPU多线程场景下的一个经典陷阱：UM的page granularity是4KB，如果CPU和GPU同时访问同一个4KB页面内的不同位置，硬件无法提供一致性保证。修复方法是使用 <code>cudaMemAdvise()</code> 和 <code>cudaMemPrefetchAsync()</code> 来显式引导数据放置和迁移策略——或者干脆回到手动 <code>cudaMalloc</code>/<code>cudaMemcpy</code> 的老路。</p>
-
-        <div class="warning">
-            <strong>非法内存访问（Illegal Memory Access）</strong> 可能是最容易"无声"的CUDA错误。它通常不会立即崩溃——而是在你完全没料到的时候给你一个莫名其妙的错误。常见的触发场景：数组越界、未初始化的指针、释放后使用等。最可怕的是：如果越界写入的内存刚好被其他有效数据占用，你的程序会"正常工作"但产生错误结果，且没有任何错误提示。这就是为什么我反复强调：<strong>每个内存访问都要做边界检查，每个CUDA API调用都要检查返回值</strong>。
-        </div>
-
-        <p>好，这一章我们覆盖了CUDA内存模型的全局图景——从最快的寄存器到最慢的全局内存，从合并访问的统一内存，再到常见的陷阱和典型踩坑案例。但有一个非常重要的内存类型我们只是提到了名字：<strong>共享内存</strong>（shared memory）。它是CUDA性能优化的绝对核心，值得用一整章的篇幅来深入探讨。这就是下一章的内容。</p>
-
-        <div class="footer-nav">
-            <a href="05.html">← 上一章</a>
-            <a href="index.html">📖 返回目录</a>
-            <a href="07.html">下一章 →</a>
-        </div>
-
-    </div>
+<nav class="footer-nav" aria-label="章节翻页">
+<a href="05.html">&#8592; 上一章</a>
+<a href="index.html">返回目录</a>
+<a href="07.html">下一章 &#8594;</a>
+</nav>
+</article>
+</main>
 </div>
-</div>
+<script>
+(function(){
+  var out=document.getElementById('calc-out');
+  var viz=document.getElementById('calc-viz');
+  var btns=[].slice.call(document.querySelectorAll('.control-row button'));
+  function render(v){
+    var tx, eff, cells, i;
+    if(v==='r'){
+      tx=32; eff='约 3%';
+      cells=8;
+    } else {
+      var s=parseInt(v,10);
+      tx=s; eff=Math.round(100/s)+'%';
+      cells=Math.min(s,8);
+    }
+    var html='';
+    for(i=0;i<cells;i++){ html+='<span class="hit"></span>'; }
+    if(v!=='r'){ for(i=cells;i<Math.max(cells,1);i++){ html+='<span></span>'; } }
+    viz.innerHTML=html;
+    if(v==='r'){
+      out.textContent='随机访问：地址散布，约 32 个独立事务，有效带宽效率降到个位数百分比。';
+    } else {
+      out.textContent='stride = '+v+'：32 个线程的访问约落成 '+tx+' 个内存事务，有效效率约 '+eff+'。';
+    }
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      btns.forEach(function(x){x.setAttribute('aria-pressed','false');});
+      b.setAttribute('aria-pressed','true');
+      render(b.getAttribute('data-stride'));
+    });
+  });
+  render('1');
+})();
+</script>
 </body>
 </html>
