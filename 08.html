@@ -1,60 +1,154 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第8章 共享内存深入</title>
-    <link rel="stylesheet" href="theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="description" content="CUDA 共享内存深入：静态/动态分配、Bank 与 Bank Conflict 原理、Padding 技巧与分块矩阵乘法实战。">
+<title>第8章 共享内存深入</title>
+<style>
+:root{--paper:#fffdf9;--ink:#203035;--subtle:#53676d;--accent:#147f80;--transform:#d06d4d;--structure:#7461ba;--annotation:#916c22;--border:#dce8e4;--surface:#f3f9f6;--max-reading:820px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.85 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-underline-offset:.17em}
+a:hover{color:var(--transform)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[data-math-scroll]:focus-visible,.table-scroll:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.skip-link{position:absolute;left:1rem;top:-6rem;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:.4rem;z-index:10}
+.skip-link:focus{top:1rem}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:236px minmax(0,1fr);gap:clamp(1.5rem,4vw,4rem);padding:3rem 2rem 6rem}
+.toc{position:sticky;top:1.5rem;align-self:start;font-size:.82rem;line-height:1.5;max-height:calc(100vh - 3rem);overflow:auto}
+.toc-title{font-weight:700;letter-spacing:.06em;margin:0 0 .6rem;color:var(--ink)}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc a{display:block;text-decoration:none;color:var(--subtle);border-left:2px solid var(--border);padding:.36rem .7rem}
+.toc a:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.toc details{margin-top:1rem;border-top:1px solid var(--border);padding-top:.6rem}
+.toc summary{cursor:pointer;font-weight:600;color:var(--subtle)}
+.toc details ul{list-style:none;margin:.45rem 0 0;padding:0}
+.toc details ul a{font-size:.78rem;padding:.26rem .7rem}
+main,article,section{min-width:0}
+article{max-width:var(--max-reading)}
+section{scroll-margin-top:1.5rem;margin-top:3.6rem}
+.article-header{padding-bottom:.5rem}
+.article-header h1{font-size:clamp(2.1rem,5vw,3.2rem);line-height:1.15;letter-spacing:-.02em;margin:.4rem 0 1rem}
+.dek{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.65;color:var(--subtle);margin:0}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);line-height:1.4;margin:0 0 1.1rem}
+h3{font-size:1.18rem;line-height:1.5;margin:2rem 0 .7rem}
+h4{font-size:1rem;margin:1.4rem 0 .5rem}
+p{margin:1rem 0}
+ul,ol{margin:1rem 0;padding-left:1.4rem}
+li{margin:.3rem 0}
+strong{font-weight:700}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+code{font-size:.88em;background:#eef4f1;padding:.08em .34em;border-radius:.3em;overflow-wrap:anywhere}
+pre{margin:1.3rem 0;padding:1.1rem;background:#1c3037;color:#e7f5ef;border-radius:.8rem;overflow-x:auto;line-height:1.6;font-size:.86rem}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+figure{margin:2rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:#fff}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.83rem;line-height:1.7;color:var(--subtle);border-top:1px solid var(--border);margin-top:.9rem;padding-top:.75rem}
+.note{margin:1.5rem 0;padding:.9rem 1.1rem;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 .5rem .5rem 0}
+.note.warn{border-left-color:var(--transform);background:#fdf1ec}
+.note.tip{border-left-color:var(--annotation);background:#fbf5e6}
+.table-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:.6rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:540px}
+th,td{border-bottom:1px solid var(--border);text-align:left;padding:.6rem .7rem;vertical-align:top}
+th{background:var(--surface);color:#164e54}
+.widget{margin:1.8rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:var(--surface)}
+.widget h3{margin-top:0}
+.control-row{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:flex-end;margin:.6rem 0}
+.control-row label{display:flex;flex-direction:column;font-size:.82rem;color:var(--subtle);gap:.25rem}
+.control-row input{font:inherit;font-size:.95rem;width:9rem;max-width:100%;padding:.4rem .5rem;border:1px solid var(--border);border-radius:.4rem;background:#fff;color:var(--ink)}
+button{font:inherit;font-size:.9rem;cursor:pointer;padding:.5rem .9rem;border:1px solid var(--accent);border-radius:.5rem;background:#fff;color:var(--accent);font-weight:600}
+button:hover{background:var(--accent);color:#fff}
+.status{margin:.8rem 0 0;font-weight:600;color:#164e54;min-height:1.6em;overflow-wrap:anywhere}
+.status .eq{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent)}
+.refs{font-size:.9rem;line-height:1.7;padding-left:1.3rem}
+.refs li{margin:.5rem 0}
+.footer-nav{margin-top:3.5rem;padding-top:1.4rem;border-top:2px solid var(--border);display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.footer-nav a{padding:.5rem 1.2rem;background:var(--surface);text-decoration:none;border-radius:2rem;font-weight:500;border:1px solid var(--border)}
+.footer-nav a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.math-inline{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",serif;vertical-align:-.05em}
+.math-equation{max-width:100%;min-width:0;margin:1.5rem 0;padding:.6rem 0;border-block:1px solid var(--border)}
+.math-scroll{display:block;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.math-scroll math[display="block"]{width:max-content;min-width:100%;font-size:clamp(1rem,2.2vw,1.25rem)}
+@media(max-width:900px){.layout{display:block;padding:2rem 1.2rem 4.5rem}.toc{position:static;max-height:none;overflow:visible;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+@media(max-width:480px){body{font-size:16px}.layout{padding:1.2rem 1rem 4rem}figure{padding:.55rem}section{margin-top:3rem}table{min-width:480px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+@media print{.layout{display:block;padding:0}.toc,.control-row,.skip-link,.footer-nav{display:none!important}figure{break-inside:avoid}a{color:#164e54}.math-scroll{overflow:visible}}
+</style>
 </head>
 <body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🖥️ 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
-            <li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
-            <li><a href="03.html">第3章 GPU硬件架构概览</a></li>
-            <li><a href="04.html">第4章 第一个CUDA内核</a></li>
-            <li><a href="05.html">第5章 线程层次结构</a></li>
-            <li><a href="06.html">第6章 内存模型基础</a></li>
-            <li><a href="07.html">第7章 同步机制入门</a></li>
-            <li><a href="08.html" class="active">第8章 共享内存深入</a></li>
-            <li><a href="09.html">第9章 全局内存优化</a></li>
-            <li><a href="10.html">第10章 常量内存与纹理内存</a></li>
-            <li><a href="11.html">第11章 原子操作与并行规约</a></li>
-            <li><a href="12.html">第12章 CUDA流与并发</a></li>
-            <li><a href="13.html">第13章 事件与性能计时</a></li>
-            <li><a href="14.html">第14章 Warp级别编程</a></li>
-            <li><a href="15.html">第15章 性能分析工具</a></li>
-            <li><a href="16.html">第16章 调试与错误处理</a></li>
-            <li><a href="17.html">第17章 性能优化方法论</a></li>
-            <li><a href="18.html">第18章 CUDA库生态</a></li>
-            <li><a href="19.html">第19章 CUDA Graph</a></li>
-            <li><a href="20.html">第20章 多GPU编程</a></li>
-            <li><a href="21.html">第21章 动态并行</a></li>
-            <li><a href="22.html">第22章 Cooperative Groups</a></li>
-            <li><a href="23.html">第23章 Nsight工具深度实战</a></li>
-            <li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
-            <li><a href="25.html">第25章 性能调优实战</a></li>
-            <li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
-            <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
-            <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
+<a class="skip-link" href="#content">跳转至正文</a>
+<div class="layout">
+<nav class="toc" aria-label="目录">
+<p class="toc-title">本章导航</p>
+<ol>
+<li><a href="#why">01 · 为什么共享内存立竿见影</a></li>
+<li><a href="#basics">02 · 分配方式回顾</a></li>
+<li><a href="#banks">03 · Bank 与 Bank Conflict</a></li>
+<li><a href="#padding">04 · Padding 技巧</a></li>
+<li><a href="#tiled">05 · 分块矩阵乘法</a></li>
+<li><a href="#profiling">06 · 用工具检测冲突</a></li>
+<li><a href="#refs">07 · 参考文献</a></li>
+</ol>
+<details>
+<summary>全部 28 章</summary>
+<ul>
+<li><a href="01.html">第1章 GPU计算的前世今生</a></li>
+<li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
+<li><a href="03.html">第3章 GPU硬件架构概览</a></li>
+<li><a href="04.html">第4章 第一个CUDA内核</a></li>
+<li><a href="05.html">第5章 线程层次结构</a></li>
+<li><a href="06.html">第6章 内存模型基础</a></li>
+<li><a href="07.html">第7章 同步机制入门</a></li>
+<li><a href="08.html" aria-current="page">第8章 共享内存深入</a></li>
+<li><a href="09.html">第9章 全局内存优化</a></li>
+<li><a href="10.html">第10章 常量内存与纹理内存</a></li>
+<li><a href="11.html">第11章 原子操作与并行规约</a></li>
+<li><a href="12.html">第12章 CUDA流与并发</a></li>
+<li><a href="13.html">第13章 事件与性能计时</a></li>
+<li><a href="14.html">第14章 Warp级别编程</a></li>
+<li><a href="15.html">第15章 性能分析工具</a></li>
+<li><a href="16.html">第16章 调试与错误处理</a></li>
+<li><a href="17.html">第17章 性能优化方法论</a></li>
+<li><a href="18.html">第18章 CUDA库生态</a></li>
+<li><a href="19.html">第19章 CUDA Graph</a></li>
+<li><a href="20.html">第20章 多GPU编程</a></li>
+<li><a href="21.html">第21章 动态并行</a></li>
+<li><a href="22.html">第22章 Cooperative Groups</a></li>
+<li><a href="23.html">第23章 Nsight工具深度实战</a></li>
+<li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
+<li><a href="25.html">第25章 性能调优实战</a></li>
+<li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
+<li><a href="27.html">第27章 GPU计算未来趋势</a></li>
+<li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
+</ul>
+</details>
+</nav>
+<main id="content">
+<article>
+<header class="article-header">
+<h1>共享内存深入</h1>
+<p class="dek">共享内存是程序员亲手管理的一块片上高速缓存：用得好，内核性能可以成倍提升；用不好，它比直接读全局内存还慢。关键就在“Bank”这个 32 路的硬件结构，以及一个只需多加一列就能解决的 Padding 技巧。</p>
+</header>
 
-        <h2>共享内存深入</h2>
 
-        <p>大家好，我是你们的讲师。如果你问一个用过CUDA五年的工程师："GPU上什么优化最立竿见影？"十个有九个会告诉你——<strong>共享内存（shared memory）</strong>。共享内存是CUDA内存层次结构中一颗真正的明珠：它是用户可控的片上缓存，延迟只有全局内存的十分之一甚至更低。用好它，你的内核性能可以翻几倍；用不好——或者更糟，根本不用它——你的内核可能连显存带宽的10%都用不到。</p>
 
-        <p>第七章我们了解了同步机制，那时候你已经在用 <code>__syncthreads()</code> 配合共享内存做block内的线程协作了。但说实话，那只是冰山一角。这一章我们要深入共享内存的本质：它的物理结构、Bank冲突的来龙去脉、如何用Padding避免冲突、以及一个经典的分块矩阵乘法实战。准备好，这一章的信息量会很大。</p>
 
-        <div class="highlight">
-            <strong>核心思想：</strong> 共享内存是"程序员管理的高速缓存"。用它减少对全局内存的访问——这是CUDA性能优化的第一条黄金法则。
-        </div>
+<section id="why" aria-labelledby="why-h">
+<h2 id="why-h">01 · 为什么共享内存立竿见影</h2>
 
-        <h3>共享内存基础回顾</h3>
+<p>如果你问一个用了五年 CUDA 的工程师：“GPU 上什么优化最立竿见影？”十有八九会得到同一个答案——<strong>共享内存（shared memory）</strong>。它是 CUDA 内存层次里的一颗明珠：由程序员亲手管理的片上缓存，延迟远低于全局内存。用好它，内核性能可以成倍提升；用不好、或者根本不用，内核可能连显存带宽的一小部分都用不到。</p>
+
+<p>第 7 章我们已经用 <code>__syncthreads()</code> 配合共享内存做过块内协作，但那只是冰山一角。这一章深入它的本质：物理结构、Bank 冲突的来龙去脉、用 Padding 避免冲突，以及一个经典的分块矩阵乘法实战。</p>
+
+<div class="note">
+<strong>核心思想：</strong> 共享内存是“程序员管理的高速缓存”。用它减少对全局内存的访问——这是 CUDA 性能优化的第一条黄金法则。
+</div>
+</section>
+
+<section id="basics" aria-labelledby="basics-h">
+<h2 id="basics-h">02 · 分配方式回顾</h2>
 
         <p>先快速回顾一下共享内存的基本用法。在CUDA中，共享内存用 <code>__shared__</code> 修饰符声明，它是每个线程块（block）私有的，同一个block内的所有线程都可以读写。有两种分配方式：</p>
 
@@ -77,16 +171,19 @@ kernel_dynamic&lt;&lt;&lt;grid, block, 256 * sizeof(float)&gt;&gt;&gt;();</code>
 
         <p>注意动态分配只能有一个 <code>extern __shared__</code> 数组，如果要同时分配多个不同类型的数组，你需要手动计算偏移量。这是很多新手会踩坑的地方。</p>
 
-        <div class="tip">
-            <strong>小贴士：</strong> 现代CUDA架构（Compute Capability 7.0+）允许你通过 <code>cudaFuncSetAttribute()</code> 设置每个block能用的最大共享内存，默认是48KB，但许多GPU支持最多配置到164KB。如果你的kernel需要更多共享内存，记得要显式调用这个API，否则 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 参数里设再多也会被截断。
+        <div class="note tip">
+            <strong>小贴士：</strong> 现代 CUDA 架构（Compute Capability 7.0+）允许通过 <code>cudaFuncSetAttribute()</code> 提高每个 block 可用的最大共享内存（默认上限及可选上限随架构与设备而变，例如较新的数据中心 GPU 可配置到 100KB 以上）。需要更多共享内存时务必显式调用该 API，否则 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 参数里设再多也会被截断。
         </div>
+</section>
 
-        <h3>Bank与Bank Conflict</h3>
+<section id="banks" aria-labelledby="banks-h">
+<h2 id="banks-h">03 · Bank 与 Bank Conflict</h2>
 
         <p>共享内存之所以速度快，是因为它在硬件上被分成了32个<strong>存储体（bank）</strong>，每个bank的宽度是4字节（32位）。这32个bank可以同时被访问——理论上，如果你的32个线程分别访问32个不同的bank，那么一次内存访问就能完成所有线程的请求。但如果两个（或更多）线程访问了同一个bank中的不同地址，就会发生<strong>bank conflict</strong>——这些访问会被串行化，性能随之下降。</p>
 
         <p>下面这张表总结了不同的访问模式及其冲突程度：</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="共享内存访问模式与 bank 冲突对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -135,36 +232,110 @@ kernel_dynamic&lt;&lt;&lt;grid, block, 256 * sizeof(float)&gt;&gt;&gt;();</code>
                 </tr>
             </tbody>
         </table>
-
-        <p>一个很重要的细节：bank编号是根据地址计算出来的——对于float类型（4字节），地址 <code>addr</code> 对应的bank编号是 <code>(addr / 4) % 32</code>。所以 <code>s_data[0]</code> 到 <code>s_data[31]</code> 恰好分属32个不同bank，步长为1的访问完美对齐。但如果声明的是 <code>__shared__ char s_data[128]</code>，每个bank包含4个字节，情况就不同了——这也是为什么共享内存通常用 <code>float</code> 或 <code>int</code> 操作的原因之一。</p>
-
-        <div class="warning">
-            <strong>重要：</strong> Bank conflict只发生在<strong>同一个warp</strong>内的线程之间。不同warp的线程访问共享内存不会相互冲突，因为warp是独立调度的。所以"32个bank"的设计恰好对应了一个warp的32个线程——这不是巧合，是有意为之。
         </div>
 
-        <h3>内存填充（Padding）技巧</h3>
+        <p>一个很重要的细节：bank 编号是由地址计算出来的——对 32 位字（如 <code>float</code>），地址 <code>addr</code> 对应的 bank 编号是 <code>(addr / 4) % 32</code>。所以 <code>s_data[0]</code> 到 <code>s_data[31]</code> 恰好分属 32 个不同 bank，步长为 1 的访问完美对齐。但如果声明的是 <code>__shared__ char s_data[128]</code>，每个 bank 会包含 4 个字节，映射就不同了——这也是共享内存通常用 <code>float</code> / <code>int</code> 操作的原因之一。</p>
 
-        <p>当你的线程需要按列访问一个二维共享内存数组时，bank conflict几乎是必然的。比如我们要在一个block内处理一个 <code>32 x 32</code> 的矩阵，每个线程处理一行：</p>
+<div class="math-equation" role="group" aria-label="bank 编号公式">
+<div class="math-scroll" data-math-scroll tabindex="0" role="region" aria-label="bank 编号公式，可横向滚动">
+<math display="block" aria-label="bank 编号等于地址除以 4 向下取整后对 32 取模">
+<mrow>
+<mi>bank</mi><mo>=</mo><mrow><mo>(</mo><mrow><mo>&#8970;</mo><mfrac><mi>addr</mi><mn>4</mn></mfrac><mo>&#8971;</mo></mrow><mo>)</mo></mrow><mo>&#160;</mo><mi>mod</mi><mo>&#160;</mo><mn>32</mn>
+</mrow>
+</math>
+</div>
+</div>
 
-        <pre><code>// 有bank conflict的版本：列访问导致2-way冲突
+        <div class="note warn">
+            <strong>重要：</strong> Bank conflict 只发生在<strong>同一个 warp</strong> 内的线程之间。不同 warp 的线程访问共享内存不会相互冲突，因为 warp 是独立调度的。所以“32 个 bank”恰好对应一个 warp 的 32 个线程——这不是巧合，而是有意为之。
+        </div>
+
+<figure>
+<svg role="img" aria-labelledby="fig-bank-title fig-bank-desc" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-bank-title">步长 1 与步长 2 的 bank 映射对比</title>
+<desc id="fig-bank-desc">左图：线程 i 访问 s_data[i]，分别命中 bank 0..7，一个周期完成；右图：线程 i 访问 s_data[2i]，奇数 bank 空闲，偶数 bank 各被两个线程命中，形成 2-way 冲突。</desc>
+<defs><marker id="bk" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#53676d"/></marker></defs>
+<text x="185" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">步长 1：无冲突</text>
+<text x="565" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#d06d4d">步长 2：2-way 冲突</text>
+<g font-size="12" text-anchor="middle">
+<rect x="30" y="188" width="330" height="86" rx="10" fill="#f3f9f6" stroke="#dce8e4"/><text x="195" y="262" fill="#53676d">每个 bank 只服务 1 个线程</text>
+<rect x="410" y="188" width="330" height="86" rx="10" fill="#fdf1ec" stroke="#f0d4c8"/><text x="575" y="262" fill="#53676d">每个偶数 bank 服务 2 个线程</text>
+</g>
+<g font-size="11" text-anchor="middle">
+<rect x="34" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="51" y="116" fill="#147f80">b0</text>
+<rect x="74" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="91" y="116" fill="#147f80">b1</text>
+<rect x="114" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="131" y="116" fill="#147f80">b2</text>
+<rect x="154" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="171" y="116" fill="#147f80">b3</text>
+<rect x="194" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="211" y="116" fill="#147f80">b4</text>
+<rect x="234" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="251" y="116" fill="#147f80">b5</text>
+<rect x="274" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="291" y="116" fill="#147f80">b6</text>
+<rect x="314" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#147f80"/><text x="331" y="116" fill="#147f80">b7</text>
+<circle cx="51" cy="62" r="7" fill="#147f80"/><circle cx="91" cy="62" r="7" fill="#147f80"/><circle cx="131" cy="62" r="7" fill="#147f80"/><circle cx="171" cy="62" r="7" fill="#147f80"/><circle cx="211" cy="62" r="7" fill="#147f80"/><circle cx="251" cy="62" r="7" fill="#147f80"/><circle cx="291" cy="62" r="7" fill="#147f80"/><circle cx="331" cy="62" r="7" fill="#147f80"/>
+<line x1="51" y1="69" x2="51" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="91" y1="69" x2="91" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="131" y1="69" x2="131" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="171" y1="69" x2="171" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="211" y1="69" x2="211" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="251" y1="69" x2="251" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="291" y1="69" x2="291" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="331" y1="69" x2="331" y2="94" stroke="#53676d" stroke-width="1.2" marker-end="url(#bk)"/>
+<rect x="414" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#d06d4d"/><text x="431" y="116" fill="#d06d4d">b0</text>
+<rect x="454" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#dce8e4"/><text x="471" y="116" fill="#53676d">b1</text>
+<rect x="494" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#d06d4d"/><text x="511" y="116" fill="#d06d4d">b2</text>
+<rect x="534" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#dce8e4"/><text x="551" y="116" fill="#53676d">b3</text>
+<rect x="574" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#d06d4d"/><text x="591" y="116" fill="#d06d4d">b4</text>
+<rect x="614" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#dce8e4"/><text x="631" y="116" fill="#53676d">b5</text>
+<rect x="654" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#d06d4d"/><text x="671" y="116" fill="#d06d4d">b6</text>
+<rect x="694" y="96" width="34" height="32" rx="4" fill="#fff" stroke="#dce8e4"/><text x="711" y="116" fill="#53676d">b7</text>
+<circle cx="424" cy="58" r="7" fill="#d06d4d"/><circle cx="438" cy="75" r="7" fill="#d06d4d"/><circle cx="504" cy="58" r="7" fill="#d06d4d"/><circle cx="518" cy="75" r="7" fill="#d06d4d"/><circle cx="584" cy="58" r="7" fill="#d06d4d"/><circle cx="598" cy="75" r="7" fill="#d06d4d"/><circle cx="664" cy="58" r="7" fill="#d06d4d"/><circle cx="678" cy="75" r="7" fill="#d06d4d"/>
+<line x1="431" y1="80" x2="431" y2="94" stroke="#d06d4d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="511" y1="80" x2="511" y2="94" stroke="#d06d4d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="591" y1="80" x2="591" y2="94" stroke="#d06d4d" stroke-width="1.2" marker-end="url(#bk)"/><line x1="671" y1="80" x2="671" y2="94" stroke="#d06d4d" stroke-width="1.2" marker-end="url(#bk)"/>
+</g>
+</svg>
+<figcaption>bank 映射对比（教学示意，只画了 32 个 bank 中的前 8 个）。<strong>步长 1</strong> 时线程 i 命中 bank i，一个周期并行完成；<strong>步长 2</strong> 时地址每隔 2 个字，32 个线程只会用到 16 个偶数 bank，每个被两个线程（不同地址）命中，于是串行化两次，带宽减半。奇数 bank 在这幅图里没有线程命中，但这并不“省下”带宽。</figcaption>
+</figure>
+</section>
+
+<section id="padding" aria-labelledby="padding-h">
+<h2 id="padding-h">04 · Padding 技巧</h2>
+
+        <p>当线程需要按列访问一个二维共享内存数组时，bank conflict 几乎是必然的。比如在一个 block 内处理 <code>32 x 32</code> 的矩阵，每个线程处理一行：</p>
+
+        <pre><code>// 有 bank conflict 的版本：行号=threadIdx.x，列 j 固定
 __shared__ float tile[32][32];
 
-// 线程threadIdx.x 访问第j列
-float val = tile[threadIdx.x][j];  // 连续线程访问连续行 → bank冲突！
+// 线程 threadIdx.x 读第 j 列
+float val = tile[threadIdx.x][j];  // bank = (32·r + j) mod 32 = j → 32 个线程全撞同一个 bank
 
-// Padding版本：每行多开一个float
-__shared__ float tile_padded[32][33];  // 注意第二维是33不是32
+// Padding 版本：每行多开一个 float
+__shared__ float tile_padded[32][33];  // 第二维用 33
 
 // 同样的访问模式，这次无冲突
-float val = tile_padded[threadIdx.x][j];  // Padding让列偏移避免了bank冲突</code></pre>
+float val = tile_padded[threadIdx.x][j];  // bank = (33·r + j) mod 32 = (r+j) mod 32</code></pre>
 
-        <p>为什么加一个padding就能消除冲突？因为 <code>tile[0][j]</code> 和 <code>tile[1][j]</code> 的地址差从 <code>32 * 4 = 128</code> 字节变成了 <code>33 * 4 = 132</code> 字节。128字节能被4整除，映射到同一个bank mod 32的偏移上；而132字节就不一样了——它把相邻行的同一列推到了不同的bank。这是一个极其廉价却极其有效的优化技巧。</p>
+        <p>为什么加一个 padding 就能消除冲突？因为对固定列 j，无 padding 时元素 <code>tile[r][j]</code> 的字地址是 <code>32r + j</code>，对应 bank <code>(32r + j) mod 32 = j</code>——与行号 r 无关，于是 32 个线程（不同 r、同一 j）全部命中 bank j，形成最坏的 32-way 冲突。换成 33 宽后，<code>tile_padded[r][j]</code> 的 bank 变成 <code>(33r + j) mod 32 = (r + j) mod 32</code>，随 r 逐一代开，冲突就消失了。代价只是每行多一个 <code>float</code>（128 行才多 512 字节），却是极其廉价又有效的优化。</p>
 
-        <div class="tip">
-            <strong>口诀：</strong> 二维共享内存，列访问加padding。多加一个元素，往往能省下数倍的带宽。在古老的Fermi架构上，我见过一个加了padding的kernel比不加速了整整4倍。
+        <div class="note tip">
+            <strong>口诀：</strong> 二维共享内存、按列访问时加 padding——多开一个元素，常常能省下成倍的访存时间。（下面的“加速倍数”类说法均来自教学示例，实际收益随访问模式与硬件而变。）
         </div>
 
-        <h3>分块矩阵乘法——共享内存实战</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-pad-title fig-pad-desc" viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-pad-title">Padding 前后同一列的 bank 落点</title>
+<desc id="fig-pad-desc">左：行宽 4 的网格中，高亮列每一行的 bank 都是 0，四个线程撞同一 bank。右：行宽 5（多一列 padding）后，高亮列各行的 bank 变成 0、1、2、3，互不冲突。</desc>
+<text x="150" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#d06d4d">行宽 4：高亮列全撞 bank 0</text>
+<text x="560" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#147f80">行宽 5：高亮列 bank = 0,1,2,3</text>
+<g font-size="12" text-anchor="middle">
+<g><rect x="50" y="60" width="44" height="36" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="72" y="83" fill="#d06d4d">b0</text><rect x="94" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="116" y="83" fill="#53676d">b1</text><rect x="138" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="160" y="83" fill="#53676d">b2</text><rect x="182" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="204" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,40)"><rect x="50" y="60" width="44" height="36" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="72" y="83" fill="#d06d4d">b0</text><rect x="94" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="116" y="83" fill="#53676d">b1</text><rect x="138" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="160" y="83" fill="#53676d">b2</text><rect x="182" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="204" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,80)"><rect x="50" y="60" width="44" height="36" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="72" y="83" fill="#d06d4d">b0</text><rect x="94" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="116" y="83" fill="#53676d">b1</text><rect x="138" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="160" y="83" fill="#53676d">b2</text><rect x="182" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="204" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,120)"><rect x="50" y="60" width="44" height="36" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="72" y="83" fill="#d06d4d">b0</text><rect x="94" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="116" y="83" fill="#53676d">b1</text><rect x="138" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="160" y="83" fill="#53676d">b2</text><rect x="182" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="204" y="83" fill="#53676d">b3</text></g>
+</g>
+<g font-size="12" text-anchor="middle">
+<g><rect x="460" y="60" width="44" height="36" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="482" y="83" fill="#147f80">b0</text><rect x="504" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="526" y="83" fill="#53676d">b1</text><rect x="548" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="570" y="83" fill="#53676d">b2</text><rect x="592" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="614" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,40)"><rect x="460" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="482" y="83" fill="#53676d">b0</text><rect x="504" y="60" width="44" height="36" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="526" y="83" fill="#147f80">b1</text><rect x="548" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="570" y="83" fill="#53676d">b2</text><rect x="592" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="614" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,80)"><rect x="460" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="482" y="83" fill="#53676d">b0</text><rect x="504" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="526" y="83" fill="#53676d">b1</text><rect x="548" y="60" width="44" height="36" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="570" y="83" fill="#147f80">b2</text><rect x="592" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="614" y="83" fill="#53676d">b3</text></g>
+<g transform="translate(0,120)"><rect x="460" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="482" y="83" fill="#53676d">b0</text><rect x="504" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="526" y="83" fill="#53676d">b1</text><rect x="548" y="60" width="44" height="36" fill="#fff" stroke="#dce8e4"/><text x="570" y="83" fill="#53676d">b2</text><rect x="592" y="60" width="44" height="36" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="614" y="83" fill="#147f80">b3</text></g>
+</g>
+</svg>
+<figcaption>Padding 的作用（教学示意，用 4 个 bank 代替 32 个）。同一列的元素在<strong>无 padding</strong> 时全部落在同一个 bank；行宽加 1 后，各行的 bank 依次错开，冲突随即消失。</figcaption>
+</figure>
+</section>
+
+<section id="tiled" aria-labelledby="tiled-h">
+<h2 id="tiled-h">05 · 分块矩阵乘法</h2>
 
         <p>共享内存最经典的应用就是分块矩阵乘法（tiled matrix multiplication）。不用共享内存的朴素版本，每个线程需要多次读取全局内存来获取A和B的元素；而分块版本让同一block的线程协作：先把子矩阵从全局内存加载到共享内存，然后从共享内存读取数据进行计算。</p>
 
@@ -216,38 +387,93 @@ __global__ void matmul_tiled(float *A, float *B, float *C,
             <li><strong>第29行</strong>：第二个 <code>__syncthreads()</code> 确保所有线程在下一轮覆盖共享内存前都已完成读取</li>
         </ul>
 
-        <p>对比朴素版本：对于 <code>TILE_SIZE = 16</code>，每个元素从共享内存读取了16次（内层循环），但从全局内存只读了1次（加载阶段）。而朴素版本每个元素要从全局内存读16次。共享内存的延迟是全局内存的1/10到1/20，性能差异可想而知。</p>
+        <p>对比朴素版本：对于 <code>TILE_SIZE = 16</code>，每个输出元素从共享内存读取 16 次（内层循环），但从全局内存只加载 1 次；而朴素版本每个元素要从全局内存读 16 次。共享内存的延迟量级远低于全局内存，性能差异也由此而来。</p>
 
-        <div class="highlight">
-            <strong>关键数字：</strong> 一张A100 GPU上，全局内存带宽约2 TB/s，共享内存带宽约13 TB/s。如果你的算法可以主要用共享内存工作，等效带宽可以提升6倍以上。
+<figure>
+<svg role="img" aria-labelledby="fig-tile-title fig-tile-desc" viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-tile-title">分块矩阵乘法中的子块复用</title>
+<desc id="fig-tile-desc">矩阵 A 的一列子块与矩阵 B 的一行子块被同一 block 的线程协作加载到共享内存，再反复相乘累加，得到 C 的一个 TILE_SIZE 乘 TILE_SIZE 子块。</desc>
+<defs><marker id="tl" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#53676d"/></marker></defs>
+<g font-size="13" text-anchor="middle">
+<rect x="40" y="40" width="150" height="150" fill="#f3f9f6" stroke="#147f80"/><rect x="40" y="40" width="50" height="50" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="115" y="210" fill="#203035">A （M×K）</text><text x="65" y="70" fill="#147f80">tile</text>
+<rect x="290" y="40" width="150" height="150" fill="#f3f9f6" stroke="#147f80"/><rect x="290" y="40" width="50" height="50" fill="#e4f2f0" stroke="#147f80" stroke-width="2"/><text x="365" y="210" fill="#203035">B （K×N）</text><text x="315" y="70" fill="#147f80">tile</text>
+<rect x="470" y="90" width="150" height="150" fill="#fdf1ec" stroke="#d06d4d"/><rect x="470" y="90" width="50" height="50" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="545" y="260" fill="#203035">C （M×N）</text><text x="495" y="120" fill="#d06d4d">tile</text>
+<line x1="190" y1="100" x2="286" y2="100" stroke="#53676d" stroke-width="2" marker-end="url(#tl)"/><text x="238" y="92" font-size="11.5" fill="#53676d">×</text>
+<line x1="440" y1="150" x2="466" y2="150" stroke="#53676d" stroke-width="2" marker-end="url(#tl)"/>
+<text x="238" y="292" font-size="12" fill="#53676d">两片 tile 先入共享内存，再反复乘累加，得到 C 的一片 tile</text>
+<text x="238" y="312" font-size="12" fill="#916c22">每个全局内存元素被本 block 复用 TILE_SIZE 次</text>
+</g>
+</svg>
+<figcaption>分块矩阵乘法的数据复用（教学示意）。block 先把 A、B 的两个子块协作搬进共享内存（每个元素只从全局内存读一次），再在片上反复读取做乘累加，把这个子块的计算全部留在片上完成。</figcaption>
+</figure>
+
+        <div class="note">
+            <strong>关键数量级：</strong> 在 A100 这一代，HBM 显存带宽约 2 TB/s（官方数据），而片上共享内存的聚合带宽可达其数倍——具体数值随 SM 数量与时钟而变化，这里只为说明“量级差异”，不作为基准。（教学示意）
         </div>
+</section>
 
-        <h3>共享内存的Bank Conflict检测</h3>
+<section id="profiling" aria-labelledby="profiling-h">
+<h2 id="profiling-h">06 · 用工具检测冲突</h2>
 
         <p>你怎么知道自己的共享内存访问有没有bank conflict？肉眼检查当然可以，但实际项目中的访问模式往往复杂得多。最可靠的方法是用<strong>NVIDIA Nsight Compute（ncu）</strong>进行profiling。</p>
 
         <p>在Nsight Compute的Memory Workload分析部分，有一项叫 <code>L1/Shared Memory Bank Conflicts</code> 的指标。它会显示每个warp的平均bank conflict次数。理想值是0——意味着所有32个线程的访问都被完美调度。如果这个值接近warp大小（32），说明几乎是每个访问都在冲突，性能损失巨大。</p>
 
-        <div class="warning">
-            <strong>真实"踩坑"故事：</strong> 我几年前优化过一个流体力学模拟的kernel。直觉告诉我"加共享内存肯定能加速"，于是我把所有全局内存访问都换成了共享内存。结果——kernel变慢了2倍！我当时百思不得其解，直到用Nsight Compute跑了一遍才发现：我的共享内存访问模式造成了32-way全冲突。因为我是按列访问一个 <code>32 x 32</code> 的二维数组，而声明是 <code>__shared__ float data[32][32]</code>，32个线程恰好全部命中同一个bank。这就是你们听说的"好心办坏事"的典型例子——加了共享内存，但因为bank conflict，实际带宽还不如直接读全局内存。后来加了一列padding（改成 <code>[32][33]</code>），性能立刻回升，最终比原始版本快了2倍。
+        <div class="note warn">
+            <strong>一个真实踩坑故事（个人经历，非基准测试）：</strong> 几年前优化一个流体力学模拟内核时，我直觉认为“加共享内存肯定能加速”，于是把所有全局内存访问都换成了共享内存。结果内核反而变慢了。用 Nsight Compute 一查才发现：我的访问是按列读一个 <code>__shared__ float data[32][32]</code>，32 个线程恰好全命中同一个 bank，形成 32-way 全冲突。加了一列 padding（改成 <code>[32][33]</code>）后性能才回升。典型的好心办坏事：加了共享内存，却因为 bank conflict 而得不偿失。
         </div>
 
-        <p>这个故事告诉我们：<strong>共享内存不是银弹</strong>。它确实快，但前提是你必须理解它的bank结构，并确保访问模式是友好的。一个简单的工具——padding——就能解决大部分问题。但更重要的是，永远不要假设优化有效，要用profiler数据说话。</p>
+        <p>这个故事说明：<strong>共享内存不是银弹</strong>。它确实快，但前提是你理解它的 bank 结构、并保证访问模式友好。一个简单的 padding 就能解决大部分问题；但更重要的是——永远不要假设优化有效，要用 profiler 数据说话。</p>
 
-        <div class="tip">
-            <strong>日常检查清单：</strong> 使用共享内存后，顺手检查三点——（1）访问模式是否步长为1？（2）二维数组有没有按列访问？（3）Nsight Compute的bank conflict计数是不是0？三问全过，基本就没问题了。
+<div class="widget">
+<h3>动手：访问步长的冲突程度</h3>
+<p>一个 warp 的 32 个线程按下标 <code>i</code> 访问 <code>s_data[i × stride]</code>。输入 stride，看看落到几个 bank、最大冲突是几路。</p>
+<div class="control-row">
+<label>stride（每线程跨过的字数）<input id="w-st" type="number" min="1" max="64" step="1" value="2"></label>
+</div>
+<p class="status" id="w-bank" aria-live="polite"></p>
+</div>
+
+        <div class="note tip">
+            <strong>日常检查清单：</strong> 使用共享内存后，顺手查三点——（1）访问模式是否步长为 1？（2）二维数组有没有按列访问？（3）Nsight Compute 的 bank conflict 计数是不是 0？三问全过，基本就没问题了。
         </div>
 
-        <p>好了，这一章我们从共享内存的分配方式讲到了bank conflict的物理原理，从padding技巧讲到了经典的分块矩阵乘法，还聊了一个真实的踩坑案例。共享内存用好了，你的CUDA编程水平就真正上了一个台阶。下一章我们要讨论的是另一个同样重要的话题——<strong>全局内存优化</strong>。GPU上最慢的内存就是全局内存，但很多人在写kernel的时候根本没有意识到它的访问模式有多糟糕。下一章我们来拆解这个问题。</p>
+        <p>这一章从共享内存的分配方式讲到 bank conflict 的硬件原理，从 padding 技巧讲到分块矩阵乘法，还记了一个踩坑案例。共享内存用好了，CUDA 编程就真正上了一个台阶。下一章我们谈另一个同样重要的话题——<strong>全局内存优化</strong>：它是 GPU 上最慢的内存，但很多人在写内核时根本没意识到自己的访问模式有多糟。</p>
+</section>
+
+<section id="refs" aria-labelledby="refs-h">
+<h2 id="refs-h">07 · 参考文献</h2>
+
+<ul class="refs">
+<li>NVIDIA. <em>CUDA C++ Programming Guide</em> · §Shared Memory / Bank conflicts. https://docs.nvidia.com/cuda/cuda-c-programming-guide/ （共享内存、bank 宽度与冲突规则）</li>
+<li>NVIDIA. <em>CUDA C++ Best Practices Guide</em> · §Shared Memory（Padding 与分块矩阵乘法示例）. https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/</li>
+<li>NVIDIA. <em>Nsight Compute Documentation</em>（<code>L1/Shared Memory Bank Conflicts</code> 指标）. https://docs.nvidia.com/nsight-compute/</li>
+<li>NVIDIA. <em>A100 Tensor Core GPU Datasheet</em>（HBM2e 显存带宽官方数据）. https://www.nvidia.com/en-us/data-center/a100/</li>
+</ul>
+</section>
 
         <div class="footer-nav">
             <a href="07.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="09.html">下一章 →</a>
         </div>
-
-    </div>
+</article>
+</main>
 </div>
-</div>
+<script>
+(function(){
+var stEl=document.getElementById('w-st'),out=document.getElementById('w-bank');
+function update(){
+var s=Math.floor(Number(stEl.value));
+if(!isFinite(s)||s<1){out.textContent='请输入 stride ≥ 1。';return;}
+var cnt=new Array(32).fill(0),i;
+for(i=0;i<32;i++){cnt[(i*s)%32]++;}
+var max=0,used=0;
+for(i=0;i<32;i++){if(cnt[i]>0)used++;if(cnt[i]>max)max=cnt[i];}
+out.innerHTML='stride = '+s+' 时，32 个线程落在 <span class="eq">'+used+'</span> 个 bank 上，最大冲突 <span class="eq">'+max+'-way</span>'+(max===1?'（无冲突）。':'（带宽降至约 1/'+max+'）。');
+}
+stEl.addEventListener('input',update);update();
+})();
+</script>
 </body>
 </html>
