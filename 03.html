@@ -231,7 +231,7 @@ button[aria-pressed="true"]{background:var(--accent);color:#fff}
 <tr><td>Turing</td><td>7.5</td><td>RTX 2080 / T4</td><td>RT Core</td></tr>
 <tr><td>Ampere</td><td>8.0 / 8.6 / 8.9</td><td>A100 / RTX 3090</td><td>3 代 Tensor Core、MIG、BF16、TF32、稀疏化</td></tr>
 <tr><td>Ada Lovelace</td><td>8.9</td><td>RTX 4090</td><td>4 代 Tensor Core、FP8</td></tr>
-<tr><td>Hopper</td><td>9.0</td><td>H100 / H200</td><td>Transformer Engine、DPX、TPC</td></tr>
+<tr><td>Hopper</td><td>9.0</td><td>H100 / H200</td><td>Transformer Engine、DPX 指令、4 代 Tensor Core、FP8</td></tr>
 <tr><td>Blackwell</td><td>10.0</td><td>B200 / B100</td><td>双芯片设计、FP4、5 代 NVLink</td></tr>
 </tbody>
 </table>
@@ -308,7 +308,7 @@ __global__ void divergence_kernel(float *data, int n) {
 <p class="status" id="calc-out" role="status" aria-live="polite"></p>
 </div>
 
-<div class="note"><strong>不是让你别写 <code>if</code>：</strong> 若一个 warp 的 32 个线程都走同一分支，就不产生任何损失。问题只出在<em>同一 warp 内</em>走不同分支。因此一个常见优化思路是让同一 warp 内线程的数据模式保持一致——社区称之为 “warp-coherent” 编程。有一个真实案例：团队把按类别排序的数据重新排列，使同类别数据连续，从而让每个 warp 走同一分支，性能提升了约 40%。</div>
+<div class="note"><strong>不是让你别写 <code>if</code>：</strong> 若一个 warp 的 32 个线程都走同一分支，就不产生任何损失。问题只出在<em>同一 warp 内</em>走不同分支。因此一个常见优化思路是让同一 warp 内线程的数据模式保持一致——社区称之为 “warp-coherent” 编程。例如把按类别排序的数据重新排列，使同类别数据连续，从而让每个 warp 走同一分支，这类改动往往带来可观提速。（教学示意：此处“约 40%”仅用于说明收益量级，实际幅度取决于分支比例、指令数与访存模式，不代表某个具体可溯源案例。）</div>
 </section>
 
 <section id="tensor" aria-labelledby="tensor-h">
