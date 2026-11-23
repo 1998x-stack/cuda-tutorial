@@ -1,56 +1,150 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第7章 同步机制入门</title>
-    <link rel="stylesheet" href="theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="description" content="CUDA 同步机制入门：__syncthreads() 块内屏障、条件分支中的同步陷阱、Host-Device 同步粒度与异步执行模型。">
+<title>第7章 同步机制入门</title>
+<style>
+:root{--paper:#fffdf9;--ink:#203035;--subtle:#53676d;--accent:#147f80;--transform:#d06d4d;--structure:#7461ba;--annotation:#916c22;--border:#dce8e4;--surface:#f3f9f6;--max-reading:820px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.85 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-underline-offset:.17em}
+a:hover{color:var(--transform)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[data-math-scroll]:focus-visible,.table-scroll:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.skip-link{position:absolute;left:1rem;top:-6rem;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:.4rem;z-index:10}
+.skip-link:focus{top:1rem}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:236px minmax(0,1fr);gap:clamp(1.5rem,4vw,4rem);padding:3rem 2rem 6rem}
+.toc{position:sticky;top:1.5rem;align-self:start;font-size:.82rem;line-height:1.5;max-height:calc(100vh - 3rem);overflow:auto}
+.toc-title{font-weight:700;letter-spacing:.06em;margin:0 0 .6rem;color:var(--ink)}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc a{display:block;text-decoration:none;color:var(--subtle);border-left:2px solid var(--border);padding:.36rem .7rem}
+.toc a:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.toc details{margin-top:1rem;border-top:1px solid var(--border);padding-top:.6rem}
+.toc summary{cursor:pointer;font-weight:600;color:var(--subtle)}
+.toc details ul{list-style:none;margin:.45rem 0 0;padding:0}
+.toc details ul a{font-size:.78rem;padding:.26rem .7rem}
+main,article,section{min-width:0}
+article{max-width:var(--max-reading)}
+section{scroll-margin-top:1.5rem;margin-top:3.6rem}
+.article-header{padding-bottom:.5rem}
+.article-header h1{font-size:clamp(2.1rem,5vw,3.2rem);line-height:1.15;letter-spacing:-.02em;margin:.4rem 0 1rem}
+.dek{font-size:clamp(1.05rem,2vw,1.25rem);line-height:1.65;color:var(--subtle);margin:0}
+h2{font-size:clamp(1.45rem,3vw,1.9rem);line-height:1.4;margin:0 0 1.1rem}
+h3{font-size:1.18rem;line-height:1.5;margin:2rem 0 .7rem}
+h4{font-size:1rem;margin:1.4rem 0 .5rem}
+p{margin:1rem 0}
+ul,ol{margin:1rem 0;padding-left:1.4rem}
+li{margin:.3rem 0}
+strong{font-weight:700}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+code{font-size:.88em;background:#eef4f1;padding:.08em .34em;border-radius:.3em;overflow-wrap:anywhere}
+pre{margin:1.3rem 0;padding:1.1rem;background:#1c3037;color:#e7f5ef;border-radius:.8rem;overflow-x:auto;line-height:1.6;font-size:.86rem}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+figure{margin:2rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:#fff}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.83rem;line-height:1.7;color:var(--subtle);border-top:1px solid var(--border);margin-top:.9rem;padding-top:.75rem}
+.note{margin:1.5rem 0;padding:.9rem 1.1rem;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 .5rem .5rem 0}
+.note.warn{border-left-color:var(--transform);background:#fdf1ec}
+.note.tip{border-left-color:var(--annotation);background:#fbf5e6}
+.table-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:.6rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:540px}
+th,td{border-bottom:1px solid var(--border);text-align:left;padding:.6rem .7rem;vertical-align:top}
+th{background:var(--surface);color:#164e54}
+.widget{margin:1.8rem 0;padding:1.1rem;border:1px solid var(--border);border-radius:1rem;background:var(--surface)}
+.widget h3{margin-top:0}
+.control-row{display:flex;flex-wrap:wrap;gap:.8rem 1.2rem;align-items:flex-end;margin:.6rem 0}
+.control-row label{display:flex;flex-direction:column;font-size:.82rem;color:var(--subtle);gap:.25rem}
+.control-row input{font:inherit;font-size:.95rem;width:9rem;max-width:100%;padding:.4rem .5rem;border:1px solid var(--border);border-radius:.4rem;background:#fff;color:var(--ink)}
+button{font:inherit;font-size:.9rem;cursor:pointer;padding:.5rem .9rem;border:1px solid var(--accent);border-radius:.5rem;background:#fff;color:var(--accent);font-weight:600}
+button:hover{background:var(--accent);color:#fff}
+.status{margin:.8rem 0 0;font-weight:600;color:#164e54;min-height:1.6em;overflow-wrap:anywhere}
+.status .eq{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent)}
+.refs{font-size:.9rem;line-height:1.7;padding-left:1.3rem}
+.refs li{margin:.5rem 0}
+.footer-nav{margin-top:3.5rem;padding-top:1.4rem;border-top:2px solid var(--border);display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+.footer-nav a{padding:.5rem 1.2rem;background:var(--surface);text-decoration:none;border-radius:2rem;font-weight:500;border:1px solid var(--border)}
+.footer-nav a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.math-inline{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",serif;vertical-align:-.05em}
+.math-equation{max-width:100%;min-width:0;margin:1.5rem 0;padding:.6rem 0;border-block:1px solid var(--border)}
+.math-scroll{display:block;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.math-scroll math[display="block"]{width:max-content;min-width:100%;font-size:clamp(1rem,2.2vw,1.25rem)}
+@media(max-width:900px){.layout{display:block;padding:2rem 1.2rem 4.5rem}.toc{position:static;max-height:none;overflow:visible;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:1rem}}
+@media(max-width:480px){body{font-size:16px}.layout{padding:1.2rem 1rem 4rem}figure{padding:.55rem}section{margin-top:3rem}table{min-width:480px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+@media print{.layout{display:block;padding:0}.toc,.control-row,.skip-link,.footer-nav{display:none!important}figure{break-inside:avoid}a{color:#164e54}.math-scroll{overflow:visible}}
+</style>
 </head>
 <body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🖥️ 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
-            <li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
-            <li><a href="03.html">第3章 GPU硬件架构概览</a></li>
-            <li><a href="04.html">第4章 第一个CUDA内核</a></li>
-            <li><a href="05.html">第5章 线程层次结构</a></li>
-            <li><a href="06.html">第6章 内存模型基础</a></li>
-            <li><a href="07.html" class="active">第7章 同步机制入门</a></li>
-            <li><a href="08.html">第8章 共享内存深入</a></li>
-            <li><a href="09.html">第9章 全局内存优化</a></li>
-            <li><a href="10.html">第10章 常量内存与纹理内存</a></li>
-            <li><a href="11.html">第11章 原子操作与并行规约</a></li>
-            <li><a href="12.html">第12章 CUDA流与并发</a></li>
-            <li><a href="13.html">第13章 事件与性能计时</a></li>
-            <li><a href="14.html">第14章 Warp级别编程</a></li>
-            <li><a href="15.html">第15章 性能分析工具</a></li>
-            <li><a href="16.html">第16章 调试与错误处理</a></li>
-            <li><a href="17.html">第17章 性能优化方法论</a></li>
-            <li><a href="18.html">第18章 CUDA库生态</a></li>
-            <li><a href="19.html">第19章 CUDA Graph</a></li>
-            <li><a href="20.html">第20章 多GPU编程</a></li>
-            <li><a href="21.html">第21章 动态并行</a></li>
-            <li><a href="22.html">第22章 Cooperative Groups</a></li>
-            <li><a href="23.html">第23章 Nsight工具深度实战</a></li>
-            <li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
-            <li><a href="25.html">第25章 性能调优实战</a></li>
-            <li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
-            <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
-            <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
+<a class="skip-link" href="#content">跳转至正文</a>
+<div class="layout">
+<nav class="toc" aria-label="目录">
+<p class="toc-title">本章导航</p>
+<ol>
+<li><a href="#why">01 · 为什么需要同步</a></li>
+<li><a href="#syncthreads">02 · __syncthreads()</a></li>
+<li><a href="#divergence">03 · 条件分支中的陷阱</a></li>
+<li><a href="#hostdevice">04 · Host-Device 同步</a></li>
+<li><a href="#async">05 · 异步执行模型</a></li>
+<li><a href="#cost">06 · 同步的代价</a></li>
+<li><a href="#refs">07 · 参考文献</a></li>
+</ol>
+<details>
+<summary>全部 28 章</summary>
+<ul>
+<li><a href="01.html">第1章 GPU计算的前世今生</a></li>
+<li><a href="02.html">第2章 CUDA编程环境搭建</a></li>
+<li><a href="03.html">第3章 GPU硬件架构概览</a></li>
+<li><a href="04.html">第4章 第一个CUDA内核</a></li>
+<li><a href="05.html">第5章 线程层次结构</a></li>
+<li><a href="06.html">第6章 内存模型基础</a></li>
+<li><a href="07.html" aria-current="page">第7章 同步机制入门</a></li>
+<li><a href="08.html">第8章 共享内存深入</a></li>
+<li><a href="09.html">第9章 全局内存优化</a></li>
+<li><a href="10.html">第10章 常量内存与纹理内存</a></li>
+<li><a href="11.html">第11章 原子操作与并行规约</a></li>
+<li><a href="12.html">第12章 CUDA流与并发</a></li>
+<li><a href="13.html">第13章 事件与性能计时</a></li>
+<li><a href="14.html">第14章 Warp级别编程</a></li>
+<li><a href="15.html">第15章 性能分析工具</a></li>
+<li><a href="16.html">第16章 调试与错误处理</a></li>
+<li><a href="17.html">第17章 性能优化方法论</a></li>
+<li><a href="18.html">第18章 CUDA库生态</a></li>
+<li><a href="19.html">第19章 CUDA Graph</a></li>
+<li><a href="20.html">第20章 多GPU编程</a></li>
+<li><a href="21.html">第21章 动态并行</a></li>
+<li><a href="22.html">第22章 Cooperative Groups</a></li>
+<li><a href="23.html">第23章 Nsight工具深度实战</a></li>
+<li><a href="24.html">第24章 踩坑集锦与调试案例</a></li>
+<li><a href="25.html">第25章 性能调优实战</a></li>
+<li><a href="26.html">第26章 CUDA 13.x新特性</a></li>
+<li><a href="27.html">第27章 GPU计算未来趋势</a></li>
+<li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
+</ul>
+</details>
+</nav>
+<main id="content">
+<article>
+<header class="article-header">
+<h1>同步机制入门</h1>
+<p class="dek">前面的内核里线程各自为战；一旦线程需要交换数据，“谁先写完、谁后读到”就成了正确性问题。这一章讲清块内屏障 __syncthreads()、最容易踩的条件分支陷阱，以及 Host 与 Device 之间的同步粒度。</p>
+</header>
 
-        <h2>同步机制入门</h2>
 
-        <p>大家好，我是你们的讲师。之前的几章，我们的kernel都非常简单——每个线程独立工作，互不依赖。但现实中的并行计算很少有这样"老死不相往来"的场景。大部分时候，线程需要协作。而一协作，就引出了并发编程中最麻烦的问题：<strong>同步</strong>。</p>
 
-        <p>如果你写过pthread或者Java多线程程序，一定对"竞态条件"和"死锁"不陌生。GPU上的同步问题比CPU上更隐蔽——因为成千上万个线程同时在执行，调试器很难介入，而且很多同步错误不是每次都能复现。这一章，我们来系统地学习CUDA中的同步机制：什么时候需要同步，什么时候不需要，以及最常见的那几个坑。</p>
 
-        <h3><code>__syncthreads()</code> 块内同步</h3>
+<section id="why" aria-labelledby="why-h">
+<h2 id="why-h">01 · 为什么需要同步</h2>
+
+<p>之前几章的内核都很简单：每个线程独立工作、互不依赖。但现实中的并行计算很少这么“老死不相往来”——大部分时候线程需要协作。而一旦协作，就引出了并发编程里最麻烦的问题：<strong>同步</strong>。</p>
+
+<p>如果你写过 pthread 或 Java 多线程，对“竞态条件”和“死锁”不会陌生。GPU 上的同步问题比 CPU 上<em>更隐蔽</em>：成千上万个线程同时在跑，调试器很难介入，而且很多同步错误不是每次都能复现。这一章系统讲清三件事——块内同步、Host/Device 同步，以及什么时候<strong>不需要</strong>同步。</p>
+</section>
+
+<section id="syncthreads" aria-labelledby="syncthreads-h">
+<h2 id="syncthreads-h">02 · <code>__syncthreads()</code> 块内同步</h2>
 
         <p><code>__syncthreads()</code> 是CUDA中最基本的同步原语。它的作用是：在同一个block内的所有线程到达这个"路障"之前，没有任何线程能越过它继续执行。你可以把它想象成一个接力赛的交接棒点——所有队员必须在交接点集齐，才能一起出发跑下一段。</p>
 
@@ -89,13 +183,36 @@ __global__ void syncthreads_example(float *input, float *output, int n) {
     }
 }</code></pre>
 
-        <div class="highlight">
-            <strong>关键理解：</strong> 没有 <code>__syncthreads()</code>，线程A写入共享内存的数据，线程B不一定能读到。因为线程A可能还没写完，线程B就已经开始读了。这种"读未写完"的错误在CPU多线程中也会出现，但GPU的warp调度机制使得它更难预测和复现。
+        <div class="note">
+            <strong>关键理解：</strong> 没有 <code>__syncthreads()</code>，线程 A 写入共享内存的数据，线程 B 不一定能读到——因为 A 可能还没写完，B 就已经开始读了。这种“读未写完”的错误在 CPU 多线程里也会出现，但 GPU 的 warp 调度使它更难预测和复现。
         </div>
 
-        <h3>条件分支中的同步陷阱</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-sync-title fig-sync-desc" viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-sync-title">__syncthreads() 作为一个块内屏障</title>
+<desc id="fig-sync-desc">同一个块内的多个 warp 先各自向共享内存写入，然后全部在屏障处等待；只有所有线程都到达后，才一起进入第二阶段读取彼此写入的值。</desc>
+<defs><marker id="sy" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#53676d"/></marker></defs>
+<g font-size="13">
+<rect x="40" y="44" width="300" height="34" rx="7" fill="#e4f2f0" stroke="#147f80"/><text x="190" y="66" text-anchor="middle" fill="#203035">warp 0：s_data[tid] = input[idx]</text>
+<rect x="40" y="86" width="300" height="34" rx="7" fill="#e4f2f0" stroke="#147f80"/><text x="190" y="108" text-anchor="middle" fill="#203035">warp 1：s_data[tid] = input[idx]</text>
+<text x="600" y="76" text-anchor="middle" font-size="12.5" fill="#53676d">阶段 1 · 各写各的</text>
+<line x1="40" y1="140" x2="360" y2="140" stroke="#53676d" stroke-width="2" marker-end="url(#sy)"/>
+<line x1="40" y1="182" x2="360" y2="182" stroke="#53676d" stroke-width="2" marker-end="url(#sy)"/>
+<line x1="30" y1="214" x2="730" y2="214" stroke="#d06d4d" stroke-width="3" stroke-dasharray="8 5"/>
+<text x="380" y="234" text-anchor="middle" font-size="14" font-weight="700" fill="#d06d4d">__syncthreads() ：快 warp 必须等慢 warp 全部到齐</text>
+<rect x="420" y="250" width="300" height="34" rx="7" fill="#fdf1ec" stroke="#d06d4d"/><text x="570" y="272" text-anchor="middle" fill="#203035">warp 0：读取 s_data[邻居]</text>
+<rect x="40" y="250" width="300" height="34" rx="7" fill="#fdf1ec" stroke="#d06d4d"/><text x="190" y="272" text-anchor="middle" fill="#203035">warp 1：读取 s_data[邻居]</text>
+<text x="600" y="188" text-anchor="middle" font-size="12.5" fill="#53676d">阶段 2 · 安全互读</text>
+</g>
+</svg>
+<figcaption>块内屏障的作用点（教学示意）。屏障是一条“所有线程必须同时越过”的虚线：它把内核切成两段，保证第二阶段读到的都是第一阶段已写入的值。</figcaption>
+</figure>
+</section>
 
-        <p>这是CUDA同步中<strong>最经典、最致命、最容易犯</strong>的错误。看下面的代码：</p>
+<section id="divergence" aria-labelledby="divergence-h">
+<h2 id="divergence-h">03 · 条件分支中的陷阱</h2>
+
+        <p>这是 CUDA 同步中<strong>最经典、最致命、最容易犯</strong>的错误。看下面的代码：</p>
 
         <pre><code>// 错误的做法 —— __syncthreads() 在条件分支中
 __global__ void broken_sync(float *data, int n) {
@@ -133,16 +250,49 @@ __global__ void fixed_sync(float *data, int n) {
     data[tid] = val;
 }</code></pre>
 
-        <div class="warning">
-            <strong><code>__syncthreads()</code> 在条件分支中 = 未定义行为。</strong> 如果block内的某些线程进入了条件分支而另一些没有，那么进入分支的线程会卡在 <code>__syncthreads()</code> 等待——永远等不来那些根本没走进这个分支的线程。这会导致<strong>死锁</strong>——kernel永远挂在那里，不会结束，不会报错，直到Host端超时。更麻烦的是，死锁不一定每次都发生——它取决于warp调度顺序，属于典型的"Heisenbug"（只在你不观察时出现）。
+        <div class="note warn">
+            <strong><code>__syncthreads()</code> 在条件分支中 = 未定义行为。</strong> 如果块内一部分线程进入了条件分支、另一部分没有，那么进入分支的线程会卡在屏障上等待——永远等不来那些根本没走进这个分支的线程，于是<strong>死锁</strong>：内核挂在那里，不结束、不报错，直到 Host 端超时。更麻烦的是，死锁不一定每次都发生——它取决于 warp 调度顺序，是典型的 Heisenbug。
         </div>
 
-        <p>真实的故事：有一次我写了一个卷积kernel，用共享内存缓存输入数据。我在加载共享内存后加了一个 <code>__syncthreads()</code>——但是它放在了一个 <code>if (tid &lt; need_padding)</code> 的条件分支里。用256线程的block测试时，一切正常。换成512线程——kernel直接死锁。我花了一整天看代码都没有发现问题，直到一个同事说了一句："你这__syncthreads是不是跑偏了？" 移出条件分支，一切正常。从那以后我养成了一个习惯：<strong>每次写 __syncthreads 都在心里默念三遍——确保所有线程都能到达这里</strong>。</p>
+<figure>
+<svg role="img" aria-labelledby="fig-div-title fig-div-desc" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-div-title">屏障位于条件分支内导致的死锁</title>
+<desc id="fig-div-desc">当 tid 小于 128 时进入写入分支并在分支内含有一个 __syncthreads；其余线程绕过了这个屏障，导致分支内的 warp 永远等待，内核死锁。</desc>
+<defs><marker id="dv" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="#53676d"/></marker></defs>
+<text x="380" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#203035">一个 block（256 线程）</text>
+<text x="370" y="62" text-anchor="middle" font-size="13" fill="#53676d">if (tid &lt; 128) ?</text>
+<path d="M330 70 L200 104" stroke="#53676d" stroke-width="2" fill="none" marker-end="url(#dv)"/>
+<path d="M430 70 L560 104" stroke="#53676d" stroke-width="2" fill="none" marker-end="url(#dv)"/>
+<rect x="60" y="112" width="280" height="38" rx="7" fill="#e4f2f0" stroke="#147f80"/><text x="200" y="136" text-anchor="middle" font-size="13" fill="#203035">s_buf[tid] = data[tid]</text>
+<rect x="440" y="112" width="280" height="38" rx="7" fill="#fff" stroke="#dce8e4"/><text x="580" y="136" text-anchor="middle" font-size="13" fill="#53676d">（不写）</text>
+<line x1="200" y1="150" x2="200" y2="196" stroke="#d06d4d" stroke-width="2" marker-end="url(#dv)"/>
+<rect x="80" y="202" width="240" height="44" rx="7" fill="#fdf1ec" stroke="#d06d4d" stroke-width="2"/><text x="200" y="230" text-anchor="middle" font-size="13" font-weight="700" fill="#d06d4d">✕ __syncthreads() 卡死</text>
+<line x1="580" y1="150" x2="580" y2="196" stroke="#147f80" stroke-width="2" marker-end="url(#dv)"/>
+<rect x="460" y="202" width="240" height="44" rx="7" fill="#fff" stroke="#dce8e4"/><text x="580" y="230" text-anchor="middle" font-size="13" fill="#53676d">继续执行 → 读取 s_buf</text>
+<text x="380" y="284" text-anchor="middle" font-size="12.5" fill="#916c22">正确做法：把 __syncthreads() 移到 if 之外，所有线程都可达</text>
+</svg>
+<figcaption>屏障必须位于<strong>所有线程都可达</strong>的位置（教学示意）。把条件判断和屏障解耦，是避免这类死锁最直接的办法。</figcaption>
+</figure>
 
-        <h3>Host-Device同步</h3>
+        <p>真实的故事：有一次我写了一个卷积 kernel，用共享内存缓存输入数据，在加载后加了一个 <code>__syncthreads()</code>——但它被放在 <code>if (tid &lt; need_padding)</code> 的条件分支里。用 256 线程的 block 测试时一切正常；换成 512 线程——内核直接死锁。排查了一整天，直到有人提醒：“你这个 <code>__syncthreads</code> 是不是跑偏了？” 把它移出条件分支，一切正常。从那以后我养成了一个习惯：<strong>写 <code>__syncthreads</code> 前先确认所有线程都能到达这里</strong>。</p>
 
-        <p>除了block内的线程同步，还有Host和Device之间的同步。CUDA提供了几个不同粒度的同步函数：</p>
+<div class="widget">
+<h3>动手：屏障安全自检</h3>
+<p>如果带 <code>__syncthreads()</code> 的分支只有一部分线程会进入，其余线程就永远到不了屏障。输入 blockSize 与“会进入分支的线程数”，看看这段代码是否安全。</p>
+<div class="control-row">
+<label>blockSize（线程/块）<input id="w-bs" type="number" min="1" max="1024" step="1" value="256"></label>
+<label>进入分支的线程数<input id="w-in" type="number" min="0" max="1024" step="1" value="128"></label>
+</div>
+<p class="status" id="w-safe" aria-live="polite"></p>
+</div>
+</section>
 
+<section id="hostdevice" aria-labelledby="hostdevice-h">
+<h2 id="hostdevice-h">04 · Host-Device 同步</h2>
+
+        <p>除了 block 内的线程同步，还有 Host 和 Device 之间的同步。CUDA 提供了几个不同粒度的同步函数：</p>
+
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Host-Device 同步函数对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -179,14 +329,17 @@ __global__ void fixed_sync(float *data, int n) {
                 </tr>
             </tbody>
         </table>
-
-        <div class="tip">
-            <strong>性能建议：</strong> 尽量减少Host-Device同步的频率。每次 <code>cudaDeviceSynchronize()</code> 都强制CPU等待GPU所有工作完成，破坏了流水线的并行性。理想情况下，你应该只在需要确认结果或准备下一批数据时才同步。在kernel之间，让GPU异步地自己链式执行，而不是CPU每启动一个kernel就同步一次。这就是CUDA流（第12章）要解决的问题。
         </div>
 
-        <h3>异步执行模型</h3>
+        <div class="tip">
+            <strong>性能建议：</strong> 尽量减少 Host-Device 同步的频率。每次 <code>cudaDeviceSynchronize()</code> 都强制 CPU 等到 GPU 所有工作完成，破坏了流水线并行。理想情况下，只在需要确认结果或准备下一批数据时才同步；内核之间让 GPU 异步地自己链式执行，而不是 CPU 每启动一个内核就同步一次。这正是 CUDA 流（第12章）要解决的问题。
+        </div>
+</section>
 
-        <p>理解CUDA的异步执行模型，是写出高效程序的关键。你可能以为下面的代码是顺序执行的：</p>
+<section id="async" aria-labelledby="async-h">
+<h2 id="async-h">05 · 异步执行模型</h2>
+
+        <p>理解 CUDA 的异步执行模型，是写出高效程序的关键。你可能以为下面的代码是顺序执行的：</p>
 
         <pre><code>// CUDA 的异步执行模型
 kernel1&lt;&lt;&lt;grid1, block1&gt;&gt;&gt;(d_data1);
@@ -235,11 +388,33 @@ int main() {
 // Hello from GPU thread 3
 // [Host] 同步完成</code></pre>
 
-        <div class="highlight">
-            <strong>理解异步的重要性：</strong> 异步启动意味着CPU可以"不等待"——在GPU算着的时候，CPU可以去做其他事情（准备下一批数据、调度其他任务）。这是实现<strong>计算与数据传输重叠</strong>的基础。你可以让GPU读取显存里的数据来计算，同时CPU把下一批数据拷贝到显存——如果设计得当，额外数据传输的时间可以被计算完全隐藏。这就是为什么CUDA流（第12章）是实现高性能CUDA应用的关键技术。
+        <div class="note">
+            <strong>理解异步的重要性：</strong> 异步启动意味着 CPU “不等待”——GPU 在算的时候，CPU 可以去准备下一批数据、调度其他任务。这是实现<strong>计算与数据传输重叠</strong>的基础：让 GPU 读显存计算的同时，CPU 把下一批数据拷进显存；设计得当时，额外的传输时间可以被计算完全隐藏。这就是 CUDA 流（第12章）对高性能应用至关重要的原因。
         </div>
 
-        <h3>同步的性能代价</h3>
+<figure>
+<svg role="img" aria-labelledby="fig-async-title fig-async-desc" viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg">
+<title id="fig-async-title">异步启动与阻塞拷贝的时间线</title>
+<desc id="fig-async-desc">CPU 行：两次内核启动几乎立即返回，随后的 cudaMemcpy 会阻塞；GPU 行：k1、k2、拷贝依次执行，CPU 可以在此期间做其他工作。</desc>
+<text x="16" y="60" font-size="13" font-weight="700" fill="#147f80">CPU</text>
+<text x="16" y="150" font-size="13" font-weight="700" fill="#d06d4d">GPU</text>
+<g font-size="11.5" text-anchor="middle">
+<rect x="60" y="42" width="110" height="30" rx="5" fill="#e4f2f0" stroke="#147f80"/><text x="115" y="62" fill="#203035">启动 k1（立即返回）</text>
+<rect x="174" y="42" width="110" height="30" rx="5" fill="#e4f2f0" stroke="#147f80"/><text x="229" y="62" fill="#203035">启动 k2（立即返回）</text>
+<rect x="288" y="42" width="270" height="30" rx="5" fill="#fdf1ec" stroke="#d06d4d"/><text x="423" y="62" fill="#203035">cudaMemcpy（阻塞 CPU）</text>
+<rect x="562" y="42" width="176" height="30" rx="5" fill="#fff" stroke="#dce8e4"/><text x="650" y="62" fill="#53676d">其他工作</text>
+<rect x="120" y="132" width="150" height="30" rx="5" fill="#f3f9f6" stroke="#147f80"/><text x="195" y="152" fill="#203035">执行 k1</text>
+<rect x="274" y="132" width="170" height="30" rx="5" fill="#f3f9f6" stroke="#147f80"/><text x="359" y="152" fill="#203035">执行 k2</text>
+<rect x="448" y="132" width="150" height="30" rx="5" fill="#fdf1ec" stroke="#d06d4d"/><text x="523" y="152" fill="#203035">D2H 拷贝</text>
+</g>
+<line x1="558" y1="184" x2="558" y2="196" stroke="#53676d" stroke-width="1.5"/><text x="340" y="216" text-anchor="middle" font-size="12" fill="#53676d">时间轴（教学示意）：启动不阻塞，cudaMemcpy 同步等待</text>
+</svg>
+<figcaption>一次简单调度的理想时间线（教学示意）。内核启动只是把任务“投递”进队列就返回；<code>cudaMemcpy</code> 默认会阻塞 CPU，因此要重叠计算与传输，就得使用异步拷贝与显式的流。</figcaption>
+</figure>
+</section>
+
+<section id="cost" aria-labelledby="cost-h">
+<h2 id="cost-h">06 · 同步的代价</h2>
 
         <p>同步不是免费的。每一次 <code>__syncthreads()</code> 都有性能开销：</p>
 
@@ -256,20 +431,42 @@ int main() {
             <li><strong>负载均衡</strong>：让block内的所有线程做大致等量的工作，避免部分线程过早完成而空等</li>
         </ul>
 
-        <div class="tip">
-            <strong>什么时候可以不用同步？</strong> 如果你的block内每个线程完全独立工作（比如向量加法），不需要读其他线程写入的数据，那就完全不需要 <code>__syncthreads()</code>。很多初学者有一个误解——以为 <code>__syncthreads()</code> 是"每个kernel必须有的标配"。不是的。只在需要线程间通信时才用。不需要同步的kernel（没有数据依赖）反而能跑得更快。
+        <div class="note tip">
+            <strong>什么时候可以不用同步？</strong> 如果块内每个线程完全独立工作（比如向量加法），不需要读其他线程写入的数据，那就完全不需要 <code>__syncthreads()</code>。很多人有一个误解——以为它是“每个内核都必须有的标配”。不是：只在需要线程间通信时才用，没有数据依赖的内核反而能跑得更快。
         </div>
 
-        <p>好，这一章我们学习了同步的基础知识：<code>__syncthreads()</code> 如何协调block内的线程协作，条件分支中的同步陷阱（务必确保所有线程都能到达屏障），Host-Device的不同同步粒度，以及异步执行模型的基本概念。下一章，我们将基于这些知识深入探讨CUDA性能优化中最强大的工具之一——<strong>共享内存</strong>。它不仅是线程间通信的高速通道，更是将全局内存带宽利用率拉满的关键武器。</p>
+        <p>这一章我们理清了同步的基础：<code>__syncthreads()</code> 如何协调块内协作，条件分支里的屏障陷阱，Host-Device 的不同同步粒度，以及异步执行模型的含义。下一章我们把这块知识用起来，深入 CUDA 优化中最强大的工具之一——<strong>共享内存</strong>：它既是线程间通信的高速信道，也是把全局内存带宽利用率拉满的关键武器。</p>
+</section>
+
+<section id="refs" aria-labelledby="refs-h">
+<h2 id="refs-h">07 · 参考文献</h2>
+
+<ul class="refs">
+<li>NVIDIA. <em>CUDA C++ Programming Guide</em> · §Sync Functions / Synchronization. https://docs.nvidia.com/cuda/cuda-c-programming-guide/ （<code>__syncthreads()</code> 语义、屏障与条件分支限制）</li>
+<li>NVIDIA. <em>CUDA Runtime API Reference</em>. https://docs.nvidia.com/cuda/cuda-runtime-api/ （<code>cudaDeviceSynchronize</code> / <code>cudaStreamSynchronize</code> / <code>cudaEventSynchronize</code> 的阻塞语义）</li>
+<li>NVIDIA. <em>CUDA C++ Programming Guide</em> · §Asynchronous Concurrent Execution. https://docs.nvidia.com/cuda/cuda-c-programming-guide/ （异步内核启动与计算/传输重叠）</li>
+</ul>
+</section>
 
         <div class="footer-nav">
             <a href="06.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="08.html">下一章 →</a>
         </div>
-
-    </div>
+</article>
+</main>
 </div>
-</div>
+<script>
+(function(){
+var bsEl=document.getElementById('w-bs'),inEl=document.getElementById('w-in'),out=document.getElementById('w-safe');
+function update(){
+var bs=Math.floor(Number(bsEl.value)),k=Math.floor(Number(inEl.value));
+if(!isFinite(bs)||!isFinite(k)||bs<1||k<0){out.textContent='请输入 blockSize ≥ 1 且进入分支线程数 ≥ 0。';return;}
+if(k===0||k===bs){out.innerHTML='<span class="eq">安全</span>：所有线程都走同一条路（或都不进入分支），屏障能被全体到达。';}
+else{out.innerHTML='<span class="eq">不安全</span>：'+k+' / '+bs+' 个线程进入含屏障的分支，剩下的 '+(bs-k)+' 个永远到不了屏障 → 死锁风险。应把 __syncthreads() 移到条件之外。';}
+}
+bsEl.addEventListener('input',update);inEl.addEventListener('input',update);update();
+})();
+</script>
 </body>
 </html>
