@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第12章 CUDA流与并发</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>CUDA流与并发</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>CUDA 流与并发</h1>
+          <p class="dek">默认流会把所有操作的顺序焊死，让 GPU 大部分时间在等同步。显式流、异步拷贝与事件，才能把计算、传输和多内核重叠起来，让 DMA 引擎与计算引擎同时干活。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。到目前为止，我们的所有代码都遵循一个简单的模式：拷贝数据到GPU → 启动内核 → 拷贝结果回CPU → 下一轮。每一步都在等上一步完成。但你有没有想过——<strong>CPU拷贝数据的时候GPU能不能同时做计算？</strong> 答案是：能，而且你应该这样做。实现这种并发的工具就是<strong>CUDA流（stream）</strong>。</p>
 
@@ -54,7 +248,7 @@
             <strong>一句话总结：</strong> CUDA流 = GPU的"多线程"。一个流 = 一个逻辑工作队列。多个流 = GPU可以同时处理多个任务队列，实现计算-传输重叠和并发内核执行。
         </div>
 
-        <h3>默认流的隐藏陷阱</h3>
+        <h2>默认流的隐藏陷阱</h2>
 
         <p>如果你从来没有显式创建过CUDA流，那你一直在用的就是<strong>默认流（default stream）</strong>，也叫"NULL stream"。对于CUDA 7.0之前的代码，默认流有个臭名昭著的行为：<strong>它会和所有其他流做隐式同步。</strong> 这意味着：你在默认流里启动了一个内核，它会在开始之前等待所有其他流中的操作完成，并且在它完成之前，其他流也不能开始新的操作。</p>
 
@@ -96,7 +290,7 @@
             <strong>历史遗留问题：</strong> 很多老旧代码（尤其是2015年之前写的）用的都是默认流，这些代码在当时的GPU上"好像没什么问题"，但在现代GPU上性能远没有发挥出来。如果你在维护一个老的CUDA代码库，把默认流换成显式流往往是第一个立竿见影的优化。
         </div>
 
-        <h3>创建和使用显式流</h3>
+        <h2>创建和使用显式流</h2>
 
         <p>创建和使用显式流非常直接。用 <code>cudaStreamCreate()</code> 创建，然后通过 <code>&lt;&lt;&lt;grid, block, smem, stream&gt;&gt;&gt;</code> 的第四个参数指定内核在哪条流上执行。</p>
 
@@ -124,9 +318,15 @@ for (int i = 0; i &lt; 3; ++i)
             <strong>实际效果：</strong> 如果你的kernel是小规模的（每个block只需要少量SM资源），并发执行多个kernel可以显著提高GPU利用率。但如果每个kernel已经接近占满整个GPU（比如大型矩阵乘法），额外并发反而可能导致资源竞争导致性能下降。所以流的并发能力需要结合具体kernel的占用率来评估。
         </div>
 
-        <h3>计算与数据传输重叠</h3>
+        <h2>计算与数据传输重叠</h2>
 
         <p>CUDA流最实用、最经典的使用场景就是<strong>计算与数据传输重叠</strong>。现代GPU有独立的DMA引擎（称为Copy Engine），可以独立于计算引擎执行 <code>cudaMemcpyAsync</code> 操作。这意味着：在数据从CPU拷贝到GPU的同时，GPU可以同时执行另一个流中的内核——只要它们操作的是不同的显存区域。</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="重叠后的总时间公式，可横向滚动">
+        <math display="block" aria-label="重叠总时间约等于传输时间与计算时间的较大者，再加一个分块延迟">
+<mrow><msub><mi>T</mi><mtext>总</mtext></msub><mo>≈</mo><mi>max</mi><mo>(</mo><msub><mi>T</mi><mtext>传输</mtext></msub><mo>,</mo><msub><mi>T</mi><mtext>计算</mtext></msub><mo>)</mo><mo>+</mo><msub><mi>T</mi><mtext>分块</mtext></msub></mrow>
+</math>
+        </div>
 
         <p>要实现这个重叠，你需要使用<strong>固定内存（pinned memory）</strong>和<strong>异步内存拷贝</strong>：</p>
 
@@ -167,6 +367,33 @@ for (int i = 0; i &lt; N_CHUNKS; ++i) {
 for (int i = 0; i &lt; N_CHUNKS; ++i)
     cudaStreamSynchronize(streams[i]);</code></pre>
 
+        <figure>
+<svg role="img" aria-labelledby="fig-stream-title fig-stream-desc" viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-stream-title">默认流串行与显式流重叠的时序对比</title>
+<desc id="fig-stream-desc">上半部分：默认流下 H2D、内核、D2H 依次串行，总时间最长。下半部分：显式流把任务拆成分块，拷贝引擎与计算引擎同时工作，总时间缩短。</desc>
+<text x="14" y="46" font-size="13" fill="#334155">默认流（串行）</text>
+<g stroke="#fff" stroke-width="2">
+<rect x="120" y="26" width="40" height="30" fill="#fca5a5"/><rect x="160" y="26" width="60" height="30" fill="#93c5fd"/><rect x="220" y="26" width="40" height="30" fill="#fca5a5"/>
+<rect x="260" y="26" width="40" height="30" fill="#fca5a5"/><rect x="300" y="26" width="60" height="30" fill="#93c5fd"/><rect x="360" y="26" width="40" height="30" fill="#fca5a5"/>
+</g>
+<text x="410" y="46" font-size="12.5" fill="#334155">总时间 = 传输 + 计算</text>
+<text x="14" y="112" font-size="13" fill="#334155">显式流（重叠）</text>
+<text x="14" y="140" font-size="11" fill="#64748b">拷贝引擎</text>
+<text x="14" y="178" font-size="11" fill="#64748b">计算引擎</text>
+<g stroke="#fff" stroke-width="2">
+<rect x="120" y="118" width="40" height="28" fill="#fca5a5"/><rect x="160" y="118" width="40" height="28" fill="#fca5a5"/>
+<rect x="220" y="118" width="40" height="28" fill="#fca5a5"/><rect x="280" y="118" width="40" height="28" fill="#fca5a5"/>
+</g>
+<g stroke="#fff" stroke-width="2">
+<rect x="160" y="156" width="60" height="28" fill="#93c5fd"/><rect x="220" y="156" width="60" height="28" fill="#93c5fd"/>
+</g>
+<text x="14" y="212" font-size="11.5" fill="#7f1d1d">红 = 数据传输（H2D/D2H）</text>
+<text x="300" y="212" font-size="11.5" fill="#1e3a8a">蓝 = 内核计算</text>
+<text x="420" y="212" font-size="11.5" fill="#0f172a">总时间被压短</text>
+</svg>
+<figcaption>默认流里每一步都要等上一步（总时间 ≈ 传输 + 计算）；把任务拆成分块放到显式流后，拷贝引擎在传下一块的同时，计算引擎正在算上一块（总时间 ≈ max(传输, 计算) + 一块延迟）。<strong>教学示意</strong>：时间长为示意比例，真实重叠效果取决于硬件拷贝引擎数量、PCIe/NVLink 带宽与内核占用率。</figcaption>
+</figure>
+
         <p>在这个流水线模式中：</p>
         <ul>
             <li>流0在拷贝chunk 0时，流1的内核可以开始处理chunk 1——只要chunk 1的拷贝已完成</li>
@@ -178,7 +405,43 @@ for (int i = 0; i &lt; N_CHUNKS; ++i)
             <strong>管线化深度：</strong> 实际操作中，大多数GPU有两个Copy Engine（一个H2D、一个D2H）和一个Compute Engine。这就是为什么要至少分3个chunk——让H2D、Compute、D2H同时运行。如果系统同时支持双向传输（基于PCIe或NVLink），则管线化效果更明显。
         </div>
 
-        <h3>流同步与事件</h3>
+        <div class="widget">
+<h3>交互：分块重叠能省多少时间？</h3>
+<p>设定每个分块的传输时间与计算时间，看看分成 <code>m</code> 块后串行流与显式流的总时间差。<strong>教学示意</strong>：采用理想流水线模型，未计入启动开销与带宽竞争。</p>
+<div class="control-row">
+  <label>分块数 m <input type="range" id="s-m" min="1" max="16" value="4"><span class="readout" id="s-mv">4</span></label>
+  <label>每块传输 t (ms) <input type="range" id="s-t" min="1" max="50" value="10"><span class="readout" id="s-tv">10</span></label>
+  <label>每块计算 k (ms) <input type="range" id="s-k" min="1" max="50" value="30"><span class="readout" id="s-kv">30</span></label>
+  <button type="button" id="s-demo">换个 t/k 比例</button>
+</div>
+<div class="readout" id="s-serial">串行流：<b>—</b></div>
+<div class="readout" id="s-overlap">显式流：<b>—</b></div>
+<p class="readout" id="s-result"></p>
+</div>
+<script>
+(function(){
+  var ids=['s-m','s-t','s-k'], el={};
+  ids.forEach(function(i){el[i]=document.getElementById(i);});
+  function upd(){
+    var m=+el['s-m'].value,t=+el['s-t'].value,k=+el['s-k'].value;
+    document.getElementById('s-mv').textContent=m;
+    document.getElementById('s-tv').textContent=t;
+    document.getElementById('s-kv').textContent=k;
+    var serial=m*(t+k), overlap=m*Math.max(t,k)+Math.min(t,k);
+    document.getElementById('s-serial').innerHTML='串行流：<b>'+serial+'</b> ms（每块 t+k 依次相加）';
+    document.getElementById('s-overlap').innerHTML='显式流：<b>'+overlap+'</b> ms（流水线填充）';
+    document.getElementById('s-result').textContent='总时间约缩短到 1/'+(serial/overlap).toFixed(2)+'。当 t≈k 时收益最大；任一方占绝对主导时，收益趋近于 1。';
+  }
+  ids.forEach(function(i){el[i].addEventListener('input',upd);});
+  var modes=[[10,30],[30,10],[20,20],[5,45]], mi=0;
+  document.getElementById('s-demo').addEventListener('click',function(){
+    mi=(mi+1)%modes.length; el['s-t'].value=modes[mi][0]; el['s-k'].value=modes[mi][1]; upd();
+  });
+  upd();
+})();
+</script>
+
+        <h2>流同步与事件</h2>
 
         <p>流之间的同步主要通过<strong>CUDA事件（event）</strong>实现。事件可以插入到流中，并作为其他流等待的信号点：</p>
 
@@ -200,7 +463,7 @@ kernel_B&lt;&lt;&lt;grid, block, 0, stream_B&gt;&gt;&gt;(d_intermediate, d_outpu
             <strong>最佳实践：</strong> 尽量减少host-side的显式同步。使用 <code>cudaStreamWaitEvent</code> 在设备端完成流之间的依赖管理，而不是在CPU端用 <code>cudaStreamSynchronize</code> 逐个等待。设备端的同步效率远高于CPU端同步。
         </div>
 
-        <h3>流优先级</h3>
+        <h2>流优先级</h2>
 
         <p>从CUDA 5.0开始，你可以为流设置优先级。高优先级的流中的操作在硬件调度时会优先执行。创建带优先级的流使用 <code>cudaStreamCreateWithPriority</code>：</p>
 
@@ -222,7 +485,7 @@ background_kernel&lt;&lt;&lt;grid, block, 0, low_prio_stream&gt;&gt;&gt;(...);</
             <strong>注意：</strong> 不是所有GPU都支持流优先级。从Kepler架构开始支持，但具体的优先级范围因设备而异。如果设备不支持，所有流都是同一优先级。在代码中应使用 <code>cudaDeviceGetStreamPriorityRange</code> 检查支持情况。
         </div>
 
-        <h3>CUDA Stream Ordered Memory Allocator</h3>
+        <h2>Stream Ordered Memory Allocator</h2>
 
         <p>CUDA 11.2引入了一项重要的改进——<strong>Stream Ordered Memory Allocator</strong>。传统的 <code>cudaMalloc</code> 和 <code>cudaFree</code> 是同步的——它们会阻塞所有流，直到分配/释放完成。这在并发场景中是一个不小的开销。新的API允许在流中异步分配和释放内存：</p>
 
@@ -248,10 +511,19 @@ cudaFreeAsync(d_ptr, stream);  // 在stream中排队释放</code></pre>
         </ul>
 
         <div class="highlight">
-            <strong>真实"踩坑"故事：</strong> 几年前我为一个视频处理管线做CUDA加速。管线有4个独立的处理阶段：解码、预处理、推理、后处理。我的第一个版本把所有操作都放到默认流里——代码简单，一运行，性能很差。用Nsight Systems一看，GPU利用率不到30%。问题很清晰：解码阶段的DMA传输在跑的时候，内核调度器在空等；内核在跑的时候，DMA引擎在闲置。解决方案就是把4个阶段分别放到4个显式流中，并用事件来管理它们之间的依赖。改完之后，DMA引擎和计算引擎同时运转，GPU利用率从30%飙升到80%以上。端到端吞吐量从原来的每秒处理20帧提升到了64帧——3.2倍的提升，没有动一行计算代码，只是把流安排明白了。所以我想说的是：<strong>在你开始微调内核之前，先看看你的流的安排是不是合理的。</strong> 有时候最大的瓶颈不在内核里，而在内核之外。
+            <strong>真实"踩坑"故事：</strong> 几年前我为一个视频处理管线做CUDA加速。管线有4个独立的处理阶段：解码、预处理、推理、后处理。我的第一个版本把所有操作都放到默认流里——代码简单，一运行，性能很差。用Nsight Systems一看，GPU利用率不到30%。问题很清晰：解码阶段的DMA传输在跑的时候，内核调度器在空等；内核在跑的时候，DMA引擎在闲置。解决方案就是把4个阶段分别放到4个显式流中，并用事件来管理它们之间的依赖。改完之后，DMA引擎和计算引擎同时运转，GPU利用率从30%飙升到80%以上。端到端吞吐量从原来的每秒处理20帧提升到了64帧——3.2倍的提升，没有动一行计算代码，只是把流安排明白了。所以我想说的是：<strong>在你开始微调内核之前，先看看你的流的安排是不是合理的。</strong> 有时候最大的瓶颈不在内核里，而在内核之外。（教学示意：具体帧率与利用率数字来自一次演示环境，不具普遍性。）
         </div>
 
         <p>CUDA流是让GPU从"单线程"变成"多线程"的关键工具。正确的流管理可以实现计算与传输的完美重叠，大大提高GPU利用率和端到端的吞吐量。默认流用起来方便，但它会杀死并发——对于任何性能敏感的应用，显式创建和管理流都是必须的。下一章我们聊一个和流密切相关的话题——<strong>事件与性能计时</strong>。你现在的kernel到底是快是慢？你怎么测量？下一章我们做一次"时间警察"。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Asynchronous Concurrent Execution 一节（流、事件、<code>cudaMemcpyAsync</code> 与 Stream Ordered Memory Allocator）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。文中 API 行为与版本适用性以此为准。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="11.html">← 上一章</a>
@@ -259,7 +531,7 @@ cudaFreeAsync(d_ptr, stream);  // 在stream中排队释放</code></pre>
             <a href="13.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
