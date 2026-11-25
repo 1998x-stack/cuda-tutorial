@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第10章 常量内存与纹理内存</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>常量内存与纹理内存</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>常量内存与纹理内存</h1>
+          <p class="dek">除了全局内存和共享内存，CUDA 还有两类“专用内存”：常量内存胜在 warp 统一地址广播，纹理内存胜在 2D/3D 空间局部性。选对内存类型，比死磕错误访问模式更划算。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。全局内存优化我们讲完了，共享内存也深入了——那CUDA还有没有别的"内存花招"？有，而且还不止一种。这一章我们来聊聊两种为特定访问模式设计的内存类型：<strong>常量内存（constant memory）</strong>和<strong>纹理内存（texture memory）</strong>。它们不像共享内存那样人尽皆知，但在合适的场景下，它们能带来非常惊人的加速效果。</p>
 
@@ -52,11 +246,33 @@
             <strong>一句话总结：</strong> 常量内存 = warp内所有线程访问同一地址时最快；纹理内存 = 2D空间局部性访问时最快。选对内存类型，比拼命优化错误的内存访问高效得多。
         </div>
 
-        <h3>常量内存机制</h3>
+        <h2>常量内存机制</h2>
 
         <p>常量内存是GPU上一块64KB的只读内存区域，它有独立的<strong>常量缓存（constant cache）</strong>，大小因架构而异（通常在10KB左右）。常量内存最神奇的特性是：<strong>如果一个warp的所有32个线程访问同一个常量内存地址，硬件会把这个值广播给所有线程，相当于一次访问完成了32个线程的请求。</strong></p>
 
         <p>如果warp内的线程访问了不同的地址呢？那就糟糕了——请求会被串行化，每个不同的地址都需要一次独立的内存事务。这就是常量内存的双刃剑：用对场景，极快；用错场景，极慢。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-const-title fig-const-desc" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-const-title">常量内存：统一访问广播 vs 发散访问串行化</title>
+<desc id="fig-const-desc">左侧：warp 内三个线程读同一常量地址，硬件一次广播完成。右侧：三个线程读不同地址，请求被串行化为三次事务。</desc>
+<text x="18" y="26" font-size="13" fill="#334155">统一访问：1 次广播</text>
+<g fill="#eff6ff" stroke="#2563eb" stroke-width="1.4"><rect x="24" y="46" width="70" height="26" rx="6"/><rect x="24" y="86" width="70" height="26" rx="6"/><rect x="24" y="126" width="70" height="26" rx="6"/></g>
+<g fill="#334155" font-size="11.5" text-anchor="middle"><text x="59" y="63">T0</text><text x="59" y="103">T1</text><text x="59" y="143">T2</text></g>
+<g stroke="#94a3b8" stroke-width="1.3" fill="none"><path d="M94 59 L196 99"/><path d="M94 99 L196 99"/><path d="M94 139 L196 99"/></g>
+<rect x="196" y="86" width="110" height="26" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="251" y="103" font-size="11.5" text-anchor="middle" fill="#0f172a">filter[4]</text>
+<text x="18" y="190" font-size="11.5" fill="#1e3a8a">同一地址 → 硬件广播 → 1 次事务</text>
+<text x="380" y="26" font-size="13" fill="#334155">发散访问：3 次事务</text>
+<g fill="#fef2f2" stroke="#dc2626" stroke-width="1.4"><rect x="386" y="46" width="70" height="26" rx="6"/><rect x="386" y="86" width="70" height="26" rx="6"/><rect x="386" y="126" width="70" height="26" rx="6"/></g>
+<g fill="#7f1d1d" font-size="11.5" text-anchor="middle"><text x="421" y="63">T0</text><text x="421" y="103">T1</text><text x="421" y="143">T2</text></g>
+<g stroke="#dc2626" stroke-width="1.3" fill="none"><path d="M456 59 L558 59"/><path d="M456 99 L558 99"/><path d="M456 139 L558 139"/></g>
+<g fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"><rect x="558" y="46" width="110" height="26" rx="6"/><rect x="558" y="86" width="110" height="26" rx="6"/><rect x="558" y="126" width="110" height="26" rx="6"/></g>
+<g fill="#7f1d1d" font-size="11" text-anchor="middle"><text x="613" y="63">filter[0]</text><text x="613" y="103">filter[3]</text><text x="613" y="143">filter[6]</text></g>
+<text x="380" y="190" font-size="11.5" fill="#7f1d1d">不同地址 → 串行化 → 3 次事务</text>
+</svg>
+<figcaption>常量内存的广播取决于 <strong>warp 内地址是否相同</strong>：读写同一地址时硬件一次广播即可完成；地址一旦发散，请求就被拆成多次事务。<strong>教学示意</strong>：图中以 3 个线程代表一个 warp（实为 32 个线程）便于阅读。</figcaption>
+</figure>
 
         <table>
             <thead>
@@ -104,7 +320,40 @@
             <strong>核心原则：</strong> 常量内存最适合"warp内所有线程读取相同地址"的场景。比如所有线程都用同一个滤波器系数做卷积，或者所有线程查同一个预先计算好的查找表。这种情况下常量内存比全局内存快一个数量级。
         </div>
 
-        <h3>常量内存使用场景</h3>
+        <p>把这个规则写成数字：常量内存一个 warp 的访问需要多少次事务，取于 warp 内出现了多少个不同地址。</p>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="常量内存事务数公式，可横向滚动">
+        <math display="block" aria-label="常量内存事务数等于 warp 内不同地址的个数，全部相同时为 1，完全发散时为 32">
+<mrow><msub><mi>N</mi><mtext>事务</mtext></msub><mo>=</mo><mo>|</mo><mo>{</mo><mspace width="0.2em"/><msub><mi>a</mi><mi>i</mi></msub><mo>:</mo><mi>i</mi><mo>=</mo><mn>0</mn><mo>,</mo><mo>…</mo><mo>,</mo><mn>31</mn><mspace width="0.2em"/><mo>}</mo><mo>|</mo></mrow>
+</math>
+        </div>
+        <p>如果不加任何限定，这个集合的大小最大为 32（最幂情形）、最小为 1（全部读同一地址）。选对访问模式，就是把 32 变成 1 的过程。</p>
+
+        <div class="widget">
+<h3>交互：地址发散把 1 次广播变成 d 次事务</h3>
+<p>拖动滑块选择 warp 内出现的不同地址数 d，看常量内存需要多少次事务。<strong>教学示意</strong>：只计事务次数，不计缓存命中等其他因素。</p>
+<div class="control-row">
+  <label>不同地址数 d <input type="range" id="c-d" min="1" max="32" value="1"><span class="readout" id="c-dv">1</span></label>
+  <button type="button" id="c-demo">全统一 / 全发散</button>
+</div>
+<div class="readout" id="c-tx">—</div>
+<p class="readout" id="c-note"></p>
+</div>
+<script>
+(function(){
+  var r=document.getElementById('c-d');
+  function upd(){
+    var d=+r.value;
+    document.getElementById('c-dv').textContent=d;
+    document.getElementById('c-tx').innerHTML='常量内存事务数：<b>'+d+'</b> 次（统一访问时为 1 次）';
+    document.getElementById('c-note').textContent=d===1?'全部线程读同一地址：硬件一次广播完成。':'相比统一访问，串行化约 '+d+' 倍。';
+  }
+  r.addEventListener('input',upd);
+  document.getElementById('c-demo').addEventListener('click',function(){r.value=(+r.value===1)?32:1;upd();});
+  upd();
+})();
+</script>
+
+        <h2>常量内存使用场景</h2>
 
         <p>常量内存的经典使用场景包括<strong>滤波器系数</strong>和<strong>查找表</strong>。下面是一个图像滤波的例子：</p>
 
@@ -142,7 +391,7 @@ __global__ void gaussian_blur(const float *input, float *output,
             <strong>注意：</strong> 常量内存只有64KB！别想着把所有数据都塞进去。超过64KB会导致编译错误。而且每个warp的"统一访问"原则必须牢记——如果你的warp内32个线程访问了32个不同的常量地址，性能会急剧下降，甚至比全局内存还差。
         </div>
 
-        <h3>纹理内存机制</h3>
+        <h2>纹理内存机制</h2>
 
         <p>纹理内存（texture memory）是CUDA从图形学继承来的另一项遗产。它最初是为了图形渲染中的纹理采样而设计的，但通用计算同样可以受益。纹理内存有几个非常独特的特性：</p>
 
@@ -157,7 +406,7 @@ __global__ void gaussian_blur(const float *input, float *output,
             <strong>与全局内存的关键区别：</strong> 纹理缓存的"缓存行"不是按128字节对齐的连续地址设计的，而是按2D块（tile）组织的。这意味着当你做图像卷积、模板计算等2D邻居访问时，纹理缓存的命中率远高于普通L1缓存。
         </div>
 
-        <h3>纹理内存使用场景</h3>
+        <h2>纹理内存使用场景</h2>
 
         <p>纹理内存最强大的场景是<strong>图像处理</strong>和<strong>任何具有2D空间局部性的计算</strong>。下面的代码展示如何使用纹理对象API（CUDA 5.0+推荐的用法）：</p>
 
@@ -199,7 +448,7 @@ cudaFreeArray(cuArray);</code></pre>
             <strong>新API推荐：</strong> CUDA 11+ 引入了<strong>纹理对象</strong>（texture object）API——通过 <code>cudaCreateTextureObject()</code> 创建，返回 <code>cudaTextureObject_t</code>，然后在kernel中用 <code>tex2D&lt;float&gt;(texObj, x, y)</code> 访问。相比"纹理引用"API，纹理对象API更灵活、更安全，也更容易与C++代码集成。推荐新项目使用纹理对象API。
         </div>
 
-        <h3>只读缓存（__restrict__）</h3>
+        <h2>只读缓存（__restrict__）</h2>
 
         <p>从Kepler架构开始，NVIDIA引入了<strong>只读缓存（read-only cache）</strong>的概念，并且提供了一个编译器的优化提示——<code>__restrict__</code>。当你在指针上添加 <code>__restrict__</code> 时，你向编译器承诺：这个指针指向的内存区域不会被任何其他指针别名访问。这给了编译器更多的优化空间。</p>
 
@@ -221,12 +470,22 @@ __global__ void kernel_with_restrict(const float * __restrict__ input,
         </div>
 
         <div class="highlight">
-            <strong>真实"踩坑"故事：</strong> 我有一个做医学图像处理的朋友，他优化一个3D图像卷积kernel花了整整两周。他用所有常规手段都试过了：共享内存分块、合并访问检查、向量化加载——性能始终上不去。最后他抱着试试看的心态把输入图像从全局内存改成纹理内存——结果快了3倍。为什么？因为3D卷积核需要频繁访问相邻体素（voxel），而纹理缓存的3D空间局部性恰好完美适配这种访问模式。全局内存的L1缓存是按128字节线性组织的，但卷积核是在一个3D邻域内"乱窜"——线性缓存行在这里命中率极低。纹理缓存则按3D块组织访问，命中率高出几个层次。这个故事告诉我们：<strong>当你的访问模式有明确的空间局部性（特别是2D或3D）时，纹理内存不是"奇技淫巧"，而是正确的工程选择。</strong>
+            <strong>真实"踩坑"故事：</strong> 我有一个做医学图像处理的朋友，他优化一个3D图像卷积kernel花了整整两周。他用所有常规手段都试过了：共享内存分块、合并访问检查、向量化加载——性能始终上不去。最后他抱着试试看的心态把输入图像从全局内存改成纹理内存——结果快了3倍。为什么？因为3D卷积核需要频繁访问相邻体素（voxel），而纹理缓存的3D空间局部性恰好完美适配这种访问模式。全局内存的L1缓存是按128字节线性组织的，但卷积核是在一个3D邻域内"乱窜"——线性缓存行在这里命中率极低。纹理缓存则按3D块组织访问，命中率高出几个层次。这个故事告诉我们：<strong>当你的访问模式有明确的空间局部性（特别是2D或3D）时，纹理内存不是"奇技淫巧"，而是正确的工程选择。</strong>（教学示意：具体的“快了 3 倍”来自当时的具体 kernel 与显卡，不具普遍性。）
         </div>
 
         <p>常量内存和纹理内存是CUDA内存体系中两颗蒙尘的珍珠。它们没有共享内存那么引人注目，但在特定场景下——统一地址访问（常量内存）和空间局部性访问（纹理内存）——它们的效率远远超过全局内存。其实说到底，CUDA的内存优化就是一句话：<strong>把你的数据放在最合适的内存类型里，让硬件为你做最擅长的事。</strong></p>
 
         <p>下一章我们进入一个完全不同的主题——<strong>原子操作与并行规约</strong>。当多个线程同时写入同一个地址时会发生什么？如果你以为答案是"乱套"，那原子操作就是你的救星。而并行规约——让成百上千个线程协作完成一个归并求和——则是展示原子操作与共享内存协同工作的最佳案例。我们第11章见。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Device Memory Spaces（常量内存）与 Texture / Read-Only Cache 一节：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>常量内存容量 64KB、延迟与缓存行为均为硬件相关参数，以对应架构的官方文档为准；文中数量级仅用于说明相对差异。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="09.html">← 上一章</a>
@@ -234,7 +493,7 @@ __global__ void kernel_with_restrict(const float * __restrict__ input,
             <a href="11.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
