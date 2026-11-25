@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第11章 原子操作与并行规约</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>原子操作与并行规约</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>原子操作与并行规约</h1>
+          <p class="dek">当成千上万个线程都想改同一个地址时，正确性只能靠原子操作来兜底；而高效地把一整块数据归并成一个数，则要靠树形规约与 warp shuffle。本章讲清二者的取舍与组合。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。从前面的章节我们学到一件事：GPU擅长让千千万万个线程同时工作。但有一个问题我们一直没有正面回答——<strong>当所有这些线程都想同时修改同一个内存地址时，会发生什么？</strong> 答案是一场"数据竞争"（data race）——两个线程同时读-改-写同一个变量，结果取决于谁最后写到内存，而那个结果大概率是错误的。</p>
 
@@ -54,10 +248,11 @@
             <strong>核心思想：</strong> 原子操作 = 安全的慢。共享内存规约 = 快的安全。warp shuffle = 最快的安全。从慢到快，逐级进阶。
         </div>
 
-        <h3>原子操作类型</h3>
+        <h2>原子操作类型</h2>
 
         <p>CUDA提供了丰富的原子操作函数，下表列出了常用的原子操作及其支持的数据类型：</p>
 
+        <div class="table-scroll">
         <table>
             <thead>
                 <tr>
@@ -124,6 +319,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <p>其中 <code>atomicCAS</code>（Compare-And-Swap）是最强大的原子操作。你可以用它实现任何自定义的原子操作——比如对 <code>double</code> 的原子加法：用 <code>atomicCAS</code> 在循环中不断尝试更新，直到成功为止。这就是所谓的"CAS循环"模式。</p>
 
@@ -131,7 +327,7 @@
             <strong>冷知识：</strong> 从Pascal架构开始，<code>atomicAdd</code> 对 <code>float</code> 类型有了硬件原生支持，不需要CAS循环模拟了。而从Volta开始，共享内存上的 <code>atomicAdd</code> 也获得了硬件支持。这意味着在较新的GPU上，原子操作的性能有了显著提升。
         </div>
 
-        <h3>原子操作的性能代价</h3>
+        <h2>原子操作的性能代价</h2>
 
         <p>原子操作虽然安全，但代价不小。当一个warp中的线程同时调用 <code>atomicAdd(&amp;counter, 1)</code> 时——虽然每个线程调用的是同一个地址——硬件不得不将这些操作<strong>串行化</strong>。32个线程，即使没有其他warp竞争，也需要至少32个周期才能完成所有操作（实际上更多，因为内存延迟）。</p>
 
@@ -142,15 +338,91 @@
             <li>相比之下，普通全局内存加载带宽约 2 TB/s——差了几个数量级</li>
         </ul>
 
+        <div class="widget">
+<h3>交互：分块规约减少了多少次全局原子操作？</h3>
+<p>拖动滑块选择参与规约的线程数。每个线程若直接对同一全局地址做一次 <code>atomicAdd</code>，这些操作会被串行化；若先按 block 做共享内存规约、再由每个 block 做一次全局原子，全局原子次数会降到「block 数」。<strong>教学示意</strong>：以下只统计全局原子操作次数，未计入共享内存与带宽开销。</p>
+<div class="control-row">
+  <label>线程数 N
+    <input type="range" id="w-threads" min="256" max="262144" step="256" value="65536">
+  </label>
+  <span class="readout">N = <b id="w-n">65,536</b></span>
+  <button type="button" id="w-demo">换一组 N</button>
+</div>
+<div class="readout" id="w-direct">直接全局原子：<b>—</b></div>
+<div class="readout" id="w-staged">先分块规约（每块 256 线程）再合并：<b>—</b></div>
+<p id="w-verdict" class="readout"></p>
+</div>
+<script>
+(function(){
+  var r=document.getElementById('w-threads'), BLOCK=256;
+  function fmt(n){return n.toLocaleString('en-US');}
+  function upd(){
+    var n=+r.value, blocks=Math.ceil(n/BLOCK);
+    document.getElementById('w-n').textContent=fmt(n);
+    document.getElementById('w-direct').innerHTML='直接全局原子：<b>'+fmt(n)+'</b> 次';
+    document.getElementById('w-staged').innerHTML='先分块规约（每块 '+BLOCK+' 线程）再合并：<b>'+fmt(blocks)+'</b> 次';
+    document.getElementById('w-verdict').textContent='全局原子操作次数减少到约 1/'+Math.round(n/blocks)+'，这正是“先局部后全局”能避开热点争用的原因。';
+  }
+  r.addEventListener('input',upd); upd();
+  var presets=[256,4096,65536,262144],pi=2;
+  document.getElementById('w-demo').addEventListener('click',function(){
+    pi=(pi+1)%presets.length; r.value=presets[pi]; upd();
+  });
+})();
+</script>
+
         <div class="warning">
             <strong>教训：</strong> 原子操作不要滥用。一个常见的反模式是让数千个线程同时对同一个全局变量做 <code>atomicAdd</code>——这会把GPU硬生生变成单线程CPU。正确的做法是先在共享内存中做局部规约，最后只让少量线程做一个全局原子操作。
         </div>
 
-        <h3>并行规约算法</h3>
+        <h2>并行规约算法</h2>
 
         <p>并行规约（parallel reduction）是并行计算中最基础也最重要的算法之一。它的任务是：给定一个数组，计算其所有元素的和（或最大值、最小值等）。在串行世界里，一个循环就搞定了。但在并行世界里，<strong>如何让成百上千个线程协作完成一个归并？</strong></p>
 
         <p>经典的方法是"树形规约"（tree reduction）：每一轮，一半的线程将两个元素相加，然后数组大小减半。重复直到只剩下一个元素。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-reduce-title fig-reduce-desc" viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-reduce-title">树形规约：每轮活跃线程减半</title>
+<desc id="fig-reduce-desc">四个元素两两相加得到两个部分和，再相加得到总和；每一轮参与运算的线程数减半。</desc>
+<text x="24" y="24" font-size="13" fill="#475569">第 0 轮：4 个活跃元素</text>
+<g fill="#eff6ff" stroke="#2563eb" stroke-width="1.5">
+<rect x="40" y="34" width="100" height="40" rx="8"/><rect x="200" y="34" width="100" height="40" rx="8"/>
+<rect x="360" y="34" width="100" height="40" rx="8"/><rect x="520" y="34" width="100" height="40" rx="8"/>
+</g>
+<g fill="#0f172a" font-size="15" text-anchor="middle">
+<text x="90" y="60">a0</text><text x="250" y="60">a1</text><text x="410" y="60">a2</text><text x="570" y="60">a3</text>
+</g>
+<g stroke="#94a3b8" stroke-width="1.5" fill="none">
+<path d="M90 74 L170 108"/><path d="M250 74 L170 108"/>
+<path d="M410 74 L490 108"/><path d="M570 74 L490 108"/>
+</g>
+<text x="24" y="102" font-size="13" fill="#475569">第 1 轮：2 个活跃元素</text>
+<g fill="#dbeafe" stroke="#2563eb" stroke-width="1.5">
+<rect x="120" y="116" width="100" height="40" rx="8"/><rect x="440" y="116" width="100" height="40" rx="8"/>
+</g>
+<g fill="#0f172a" font-size="14" text-anchor="middle">
+<text x="170" y="142">a0+a1</text><text x="490" y="142">a2+a3</text>
+</g>
+<g stroke="#94a3b8" stroke-width="1.5" fill="none">
+<path d="M170 156 L330 190"/><path d="M490 156 L330 190"/>
+</g>
+<text x="24" y="186" font-size="13" fill="#475569">第 2 轮：1 个活跃元素（总和）</text>
+<rect x="280" y="198" width="100" height="40" rx="8" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="330" y="224" font-size="15" text-anchor="middle" fill="#0f172a">S</text>
+</svg>
+<figcaption>树形规约（sequential addressing）。每一轮把相邻两个部分和合并，活跃元素（活跃线程）减半。<strong>教学示意</strong>：真实 kernel 中每轮只让 <code>tid &lt; s</code> 的线程写入 <code>sdata[tid] += sdata[tid + s]</code>，其余线程在 <code>__syncthreads()</code> 处等待。</figcaption>
+</figure>
+
+        <p>用数学写下来，规约要计算的就是一个总和：</p>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="规约求和公式，可横向滚动">
+        <math display="block" aria-label="S 等于 i 从 0 到 N 减 1 的 x_i 之和">
+<mrow><mi>S</mi><mo>=</mo>
+<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow></munderover>
+<msub><mi>x</mi><mi>i</mi></msub></mrow>
+</math>
+        </div>
+        <p>树形规约在第 <code>k</code> 轮把步长为 <code>s = 2^k</code> 的两两元素相加，等价于把计算图的深度从 <code>N</code> 降到 <code>log₂N</code>——这正是并行规约相比串行求和能把时间从 <code>O(N)</code> 压到 <code>O(log N)</code> 的原因（忽略内存带宽这个更真实的下限）。</p>
 
         <pre><code>// 共享内存规约 —— 交错寻址（interleaved addressing）
 __global__ void reduce_interleaved(float *g_data, float *g_out, int n) {
@@ -207,7 +479,7 @@ __global__ void reduce_sequential(float *g_data, float *g_out, int n) {
             <strong>关键洞察：</strong> 规约算法的核心是让active的线程数每轮减半，但整体的数据吞吐量不变。理想情况下，每一轮都应该用满GPU的计算资源。当warp内的线程数少于32时，情况变得微妙——这就是下一节warp shuffle大显身手的场景。
         </div>
 
-        <h3>Warp Shuffle规约优化</h3>
+        <h2>Warp Shuffle规约优化</h2>
 
         <p>当共享内存规约进行到最后5轮（s = 16, 8, 4, 2, 1），active的线程数已经少于32了——也就是说，只需要一个warp就能完成。这时候，我们可以抛弃共享内存，改用<strong>warp shuffle</strong>指令在寄存器之间直接交换数据。这消除了共享内存的读写延迟和bank conflict问题，而且不需要 <code>__syncthreads()</code>。</p>
 
@@ -255,7 +527,7 @@ __global__ void reduce_shuffle(float *g_data, float *g_out, int n) {
             <strong>性能对比：</strong> 同样做求和规约，单纯用 <code>atomicAdd</code> 在全局内存上操作，吞吐大约是几十MB/s；共享内存规约版可以做到几百GB/s（受限于带宽）；而加上warp shuffle优化后，最后阶段完全不需要访问共享内存，可以再提升10-20%。越大的数组，优势越明显。
         </div>
 
-        <h3>混合精度原子操作</h3>
+        <h2>混合精度原子操作</h2>
 
         <p>从Compute Capability 6.x（Pascal）开始，NVIDIA为 <code>atomicAdd</code> 增加了对 <code>float</code> 和 <code>double</code> 的硬件原生支持。而在Volta（7.0）上，共享内存上的 <code>atomicAdd</code> 也获得了硬件加速。到了Turing（7.5），甚至加入了 <code>atomicAdd</code> 对 <code>__half</code>（FP16）的支持。</p>
 
@@ -285,10 +557,20 @@ __device__ double atomicMinDouble(double *addr, double val) {
         </div>
 
         <div class="highlight">
-            <strong>真实"踩坑"故事：</strong> 我曾经遇到过一个让我抓狂的bug。同事写了一个GPU上的直方图统计——简单来说就是每个像素有一个值，我们要统计每个值的出现次数。他的做法是：每个线程读入一个像素值，然后对 <code>histogram[value]</code> 做 <code>atomicAdd(histogram + value, 1)</code>。整个kernel跑完用了把整个显存带宽跑满，但耗时还是不可接受——比CPU还慢5倍。我一看：<strong>百万个线程在同时对一个数组做原子操作！</strong> 这个数组就是"热点"——所有线程都在激烈竞争。正确的做法是：每个block先在共享内存中做一个局部直方图，再用 <code>atomicAdd</code> 把局部直方图合并到全局直方图。改完后，耗时从200ms降到了0.8ms——250倍的提升，完全是因为消除了全局原子操作的争用。<strong>原子操作本身没有错，但让百万线程抢同一个地址就是灾难。</strong>
+            <strong>真实"踩坑"故事：</strong> 我曾经遇到过一个让我抓狂的bug。同事写了一个GPU上的直方图统计——简单来说就是每个像素有一个值，我们要统计每个值的出现次数。他的做法是：每个线程读入一个像素值，然后对 <code>histogram[value]</code> 做 <code>atomicAdd(histogram + value, 1)</code>。整个kernel跑完用了把整个显存带宽跑满，但耗时还是不可接受——比CPU还慢5倍。我一看：<strong>百万个线程在同时对一个数组做原子操作！</strong> 这个数组就是"热点"——所有线程都在激烈竞争。正确的做法是：每个block先在共享内存中做一个局部直方图，再用 <code>atomicAdd</code> 把局部直方图合并到全局直方图。改完后，耗时从200ms降到了0.8ms——250倍的提升，完全是因为消除了全局原子操作的争用。<strong>原子操作本身没有错，但让百万线程抢同一个地址就是灾难。</strong>（教学示意：具体数字来自一次课堂演示，不具普遍性，勿当作基准。）
         </div>
 
         <p>原子操作和并行规约是CUDA编程中绕不开的两个话题。原子操作让你在必须共享写入时保持正确性，而并行规约则是"如何高效地在并行环境中做串行操作"的经典答案。记住"先局部后全局"的原则，你的kernel就能既正确又高效。下一章我们进入一个全新的维度——<strong>CUDA流与并发</strong>，看看如何让GPU同时做多件事，而不是把所有的操作串行排队。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——原子函数一节（<code>atomicAdd</code> 等）与性能指导：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。文中原子操作的可用类型与计算能力要求以此为准。</li>
+          <li>本章表格中的“计算能力要求”与“支持类型”栏需与对应版本官方文档核对；文中出现的带宽/吞吐数量级（如 1.2 GB/s、2 TB/s）仅用于说明差距量级，标为教学示意。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="10.html">← 上一章</a>
@@ -296,7 +578,7 @@ __device__ double atomicMinDouble(double *addr, double val) {
             <a href="12.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
