@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第28章 综合项目：手写高性能GEMM</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html" class="active">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>综合项目：手写高性能GEMM</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>综合项目：手写高性能 GEMM</h1>
+          <p class="dek">把全书的技术汇到一个项目里：从每线程一个元素的朴素实现，一步步优化到接近 cuBLAS 的 80%——合并访问、共享内存分块、寄存器分块与 warp 级优化，每一步都对应一个被解决的瓶颈。</p>
+        </header>
 
         <p>恭喜大家来到最后一章！</p>
 
@@ -56,15 +250,50 @@
             <strong>为什么是GEMM？</strong> 因为矩阵乘法不仅是科学计算和深度学习的核心运算，更是一个绝佳的"性能调优训练场"——它涉及全局内存合并访问、共享内存分块、寄存器重用、warp级编程、指令级并行等几乎所有CUDA优化技术。可以说，<strong>搞定GEMM，你就搞定了CUDA优化的80%。</strong>
         </div>
 
-        <h3>项目目标与基准</h3>
+        <h2>项目目标与基准</h2>
 
         <p>我们的目标是实现 <code>C = A * B</code>，其中 A 是 M×K 矩阵，B 是 K×N 矩阵，C 是 M×N 矩阵。我们使用尺寸 M=N=K=4096 的方阵作为测试基准，数据类型为 <code>float</code>。</p>
 
+        <p>把它写成索引形式，输出矩阵的每个元素是 A 的一行与 B 的一列的内积：</p>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="矩阵乘法定义式，可横向滚动">
+        <math display="block" aria-label="C 的 i j 元素等于 k 从 0 到 K 减 1 的 A i k 乘 B k j 之和">
+<mrow><msub><mi>C</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mrow><mi>K</mi><mo>−</mo><mn>1</mn></mrow></munderover><msub><mi>A</mi><mrow><mi>i</mi><mi>k</mi></mrow></msub><msub><mi>B</mi><mrow><mi>k</mi><mi>j</mi></mrow></msub></mrow>
+</math>
+        </div>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-gemm-title fig-gemm-desc" viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-gemm-title">GEMM 的共享内存分块</title>
+<desc id="fig-gemm-desc">矩阵 A 按行分块、B 按列分块，一个 block 各自加载一块到共享内存，在块内计算出 C 的一个子块。</desc>
+<text x="20" y="30" font-size="13" fill="#334155">A（M×K，按行取块）</text>
+<g fill="#eff6ff" stroke="#2563eb" stroke-width="1.2">
+<rect x="40" y="44" width="120" height="150"/><rect x="40" y="104" width="120" height="30" fill="#bfdbfe"/>
+</g>
+<text x="100" y="124" font-size="11.5" text-anchor="middle" fill="#0f172a">A 的第 t 个行块</text>
+<text x="250" y="30" font-size="13" fill="#334155">B（K×N，按列取块）</text>
+<g fill="#f0fdf4" stroke="#16a34a" stroke-width="1.2">
+<rect x="270" y="44" width="150" height="150"/><rect x="330" y="44" width="30" height="150" fill="#bbf7d0"/>
+</g>
+<text x="345" y="124" font-size="11.5" text-anchor="middle" fill="#0f172a">B 的第</text>
+<text x="345" y="140" font-size="11.5" text-anchor="middle" fill="#0f172a">t 个列块</text>
+<text x="470" y="30" font-size="13" fill="#334155">C 的一个子块</text>
+<rect x="490" y="80" width="110" height="90" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.4"/>
+<text x="545" y="122" font-size="12" text-anchor="middle" fill="#713f12">C 子块</text>
+<text x="545" y="140" font-size="11" text-anchor="middle" fill="#713f12">（寄存器累加）</text>
+<g stroke="#94a3b8" stroke-width="1.4" fill="none" marker-end="url(#gm)">
+<path d="M160 118 L262 118"/><path d="M420 118 L484 118"/>
+</g>
+<defs><marker id="gm" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#94a3b8"/></marker></defs>
+<text x="60" y="228" font-size="11.5" fill="#475569">沿 K 方向逐块推进：每块从全局内存加载一次，在 block 内被重用 T 次。</text>
+</svg>
+<figcaption>GEMM 分块的核心：A 的一个行块与 B 的一个列块加载进共享内存后，block 用它们算出 C 的一个子块，并沿 K 方向滑动。<strong>教学示意</strong>：图示为方块的分块概念，真实 kernel 的 tile 尺寸与寄存器分块大小依架构而异。</figcaption>
+</figure>
+
         <p>性能目标是：<strong>达到 cuBLAS 性能的 80% 以上。</strong> 这是一个极具挑战性的目标——cuBLAS是NVIDIA工程师花了十几年手工优化的结果。但如果本章的五步优化法走完，你应该能非常接近这个目标。</p>
 
-        <p>在开始之前，先建立基准线。在我的测试平台（H100 SXM）上，cuBLAS 的 <code>cublasSgemm</code> 对于 4096×4096 的FP32矩阵可以达到约 65 TFLOPS。这就是我们要挑战的"靶子"。</p>
+        <p>在开始之前，先建立基准线。在我的测试平台（H100 SXM）上，cuBLAS 的 <code>cublasSgemm</code> 对于 4096×4096 的FP32矩阵可以达到约 65 TFLOPS。这就是我们要挑战的"靶子"。（教学示意：本章所有 TFLOPS / GFLOPS 数字与加速比均为教学估算，用于展示“优化顺序决定收益量级”，具体数值随显卡、矩阵规模、数据类型与编译器版本差异很大，不应作为可复现基准。）</p>
 
-        <h3>版本1——朴素实现</h3>
+        <h2>版本 1 —— 朴素实现</h2>
 
         <p>一切从最朴素的实现开始。每个线程计算结果矩阵中的一个元素：</p>
 
@@ -98,7 +327,7 @@ __global__ void gemm_v1(const float *A, const float *B, float *C,
             <strong>不要因为"慢"而轻视版本1。</strong> 这个朴素的实现很重要——它给了你一个正确的 baseline。在所有后续优化中，你每次都要对比版本1来验证正确性。优化而不失正确性，是所有高性能编程的第一原则。
         </div>
 
-        <h3>版本2——全局内存合并访问</h3>
+        <h2>版本 2 —— 全局内存合并访问</h2>
 
         <p>第一个大优化：让全局内存访问变得"合并"（coalesced）。关键在于改变数据的映射方式，使得同一个warp内的连续线程访问连续的内存地址：</p>
 
@@ -128,7 +357,7 @@ __global__ void gemm_v2(const float *A, const float *B, float *C,
 
         <p>为什么用 32×8 的block？因为warp是32个线程一组，threadIdx.x 从0到31的线程构成一个warp。当它们访问 <code>B[k * N + col]</code> 时，col依次为col0, col0+1, ... col0+31——这是一个连续的内存段，硬件可以合并成一次或两次大的内存事务。性能从0.3 TFLOPS提升到约2 TFLOPS——6倍！——仅仅因为改变了线程到数据的映射方式。</p>
 
-        <h3>版本3——共享内存分块</h3>
+        <h2>版本 3 —— 共享内存分块</h2>
 
         <p>接下来是GPU优化的核心武器：<strong>共享内存分块（tiling）</strong>。思想是将 A 和 B 矩阵划分成小块（tile），每个线程块先将需要的 tile 加载到共享内存，再从共享内存中读取数据进行计算。</p>
 
@@ -180,7 +409,32 @@ __global__ void gemm_v3(const float *A, const float *B, float *C,
 
         <p>共享内存分块带来的提升是巨大的——12 TFLOPS，是版本2的6倍。原因很清楚：每个数据从全局内存加载一次，然后在共享内存中被重用TILE_SIZE次。这让全局内存的访问量减少了TILE_SIZE倍，将瓶颈从"带宽"转移到了"计算"上。</p>
 
-        <h3>版本4——寄存器分块与向量化</h3>
+        <div class="widget">
+<h3>交互：分块把全局读量降了几倍</h3>
+<p>拖动 tile 边长 T，看分块后相对朴素实现的全局内存读取量。N×N 方阵下，元素被重复读取的次数从 N 降到约 N/T。<strong>教学示意</strong>：只计全局读量，未计共享内存搬运与同步开销。</p>
+<div class="control-row">
+  <label>tile 边长 T <input type="range" id="g-t" min="8" max="128" step="8" value="32"><span class="readout" id="g-tv">32</span></label>
+  <button type="button" id="g-demo">8 / 128 切换</button>
+</div>
+<div class="readout" id="g-out">—</div>
+<p class="readout" id="g-note"></p>
+</div>
+<script>
+(function(){
+  var r=document.getElementById('g-t');
+  function upd(){
+    var t=+r.value;
+    document.getElementById('g-tv').textContent=t;
+    document.getElementById('g-out').innerHTML='全局读量约为朴素实现的 <b>1/'+t+'</b>（降到 '+(100/t).toFixed(1)+'%）';
+    document.getElementById('g-note').textContent='T 越大重用得越充分，但单个 block 的共享内存占用与寄存器压力也越大，占用率下降——这就是“重用 vs 占用率”的权衡。';
+  }
+  r.addEventListener('input',upd);
+  document.getElementById('g-demo').addEventListener('click',function(){r.value=(+r.value===8)?128:8;upd();});
+  upd();
+})();
+</script>
+
+        <h2>版本 4 —— 寄存器分块与向量化</h2>
 
         <p>共享内存分块虽然好，但每个线程仍然是从共享内存逐元素读取数据。更进一步：让每个线程<strong>在寄存器中维护多个累加器</strong>，并且使用<strong>向量化加载</strong>来充分利用内存带宽。</p>
 
@@ -277,7 +531,7 @@ __global__ void gemm_v4(const float *A, const float *B, float *C,
             <li><strong>外积计算</strong>：避免了对共享内存的重复读取，寄存器间的计算延迟最低</li>
         </ul>
 
-        <h3>版本5——Warp级优化</h3>
+        <h2>版本 5 —— Warp 级优化</h2>
 
         <p>最终的优化：利用warp级协作和Tensor Cores（如果可用）来达到极致性能。这里我们展示一个不使用Tensor Cores但充分利用warp级编程技术的版本：</p>
 
@@ -372,7 +626,7 @@ __global__ void gemm_v5(const float *A, const float *B, float *C,
             <strong>真正的高手之路：</strong> 如果你想超越80%这个门槛，下一步要学习的是cuTLASS（NVIDIA的GEMM模板库）和cuTile编程模型（我们在第26章介绍的）。cuTLASS实现了比我们这里更精细的优化：warp-level matrix multiply、pipeline异步拷贝、自动Tensor Core dispatch。好消息是——学完本章的你，已经具备了理解cuTLASS源码的全部前置知识。
         </div>
 
-        <h3>最终性能对比</h3>
+        <h2>最终性能对比</h2>
 
         <p>下面这张表总结了从版本1到版本5的完整历程（测试平台：NVIDIA H100 SXM, M=N=K=4096, FP32）：</p>
 
@@ -439,13 +693,15 @@ __global__ void gemm_v5(const float *A, const float *B, float *C,
             </tbody>
         </table>
 
+        <p>（教学示意：上表的 GFLOPS 与利用率是按优化思路写出的教学估算，并不来自一次可复现的统一 benchmark；重点在于各版本之间的<strong>相对</strong>变化趋势。）</p>
+
         <p>从这张表中，你可以看到一个经典的优化路径：从"完全没优化"到"接近理论极限"，每一步都针对一个具体的瓶颈。如果你在NVIDIA Nsight Compute中做<strong>roofline分析</strong>（这是我们在第15章学过的方法），你会看到：v1和v2处于"带宽受限"区域，v3和v4逐步向"计算受限"区域移动，v5已经非常接近屋顶线了。</p>
 
         <div class="highlight">
             <strong>关于"最后20%"的哲学：</strong> 我们花了5步达到cuBLAS的80%，每一步的提速逐步递减（6x -> 6x -> 2.5x -> 1.7x）。最后20%需要付出比前面所有加起来更多的努力——cuBLAS用了异步pipeline拷贝、warp-group level调度、精确的寄存器压力管理、甚至手写的PTX代码。这符合高性能计算的"80/20法则"：80%的性能可以用20%的努力获得，最后20%的性能需要80%的努力。在工作中有时候80%就足够了——知道什么时候"够好了"比追求极致更重要。
         </div>
 
-        <h3>从项目中学到的</h3>
+        <h2>从项目中学到的</h2>
 
         <p>这个GEMM项目，表面上是一个矩阵乘法的优化练习，但我希望你能从中带走比"如何写GEMM"更深远的东西：</p>
 
@@ -466,7 +722,7 @@ __global__ void gemm_v5(const float *A, const float *B, float *C,
 
         <hr>
 
-        <h3>写在最后的话</h3>
+        <h2>写在最后的话</h2>
 
         <p>好了，到这里，我们的CUDA教程就全部结束了。从GPU的历史起源到CUDA 13.x新特性，从第一个"Hello World"内核到这个300行代码挑战cuBLAS的GEMM项目，你走完了一条完整的从入门到进阶的学习路径。</p>
 
@@ -483,13 +739,24 @@ __global__ void gemm_v5(const float *A, const float *B, float *C,
 
         <p><strong>谢谢大家，祝大家编码愉快，性能爆表！</strong></p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>CUTLASS —— NVIDIA 的 GEMM/卷积模板库，可对照本章的分块与 pipeline 思路阅读：<a href="https://github.com/NVIDIA/cutlass">github.com/NVIDIA/cutlass</a>。</li>
+          <li>NVIDIA cuBLAS 文档（<code>cublasSgemm</code> 等接口与性能说明）：<a href="https://docs.nvidia.com/cuda/cublas/">docs.nvidia.com/cuda/cublas</a>。</li>
+          <li>本文所有性能数字（TFLOPS/GFLOPS 与加速比）均为教学估算，仅用于说明优化顺序与相对趋势。</li>
+        </ul>
+      </section>
+
+      </article>
+
         <div class="footer-nav">
             <a href="27.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="javascript:void(0)">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
