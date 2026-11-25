@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第25章 性能调优实战</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,16 +232,19 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>性能调优实战</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>性能调优实战</h1>
+          <p class="dek">把方法论落到两个经典算法上：从最 naive 的并行规约与矩阵乘法，逐版分析与优化，到接近硬件极限；并讨论一个重要问题——什么时候该停手。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。经过前面那么多章的理论、工具和踩坑案例的洗礼，你终于走到了性能调优的实战环节。这一章的目标不是教你新的API或技巧——而是带着你走一遍真正的优化流程：从一个能跑但很慢的内核开始，通过一步步系统化的优化，把它提升到接近硬件极限的水平。</p>
 
         <p>我们会选两个最经典的CUDA算法作为案例——<strong>并行规约（parallel reduction）</strong>和<strong>矩阵乘法（matrix multiplication）</strong>。这两个算法是CUDA领域最知名的"练兵场"，几乎所有优化技术都能在这两个场景中得到体现。更重要的是，理解了这两个案例的优化思路，你就能把同样的方法论应用到任意CUDA内核上。</p>
 
-        <h3>案例一——并行规约从Naive到Optimized</h3>
+        <h2>案例一 —— 并行规约从 Naive 到 Optimized</h2>
 
         <p>并行规约是一个经典问题：给定一个数组，求所有元素的和（或最大值、最小值等）。在CPU上，一个简单的for循环就解决了。在GPU上，我们需要让成百上千个线程协作完成这个任务。下面是我们从最naive版本到极致优化版本的演进过程。</p>
 
@@ -122,7 +316,7 @@ __global__ void reduce_v4(float* g_data, float* g_out) {
 
         <p><strong>V5: Cooperative Groups</strong>——用CUDA Cooperative Groups API替代手动管理warp和block，让代码更清晰且能自动适配架构变化：</p>
 
-        <p>下面是各个版本在GTX 4090（数据点：10M个float）上的实测性能对比：</p>
+        <p>下面是各个版本在 GTX 4090（数据点：10M个float）上的对比（教学示意：下表数字为课堂演示估算，用于展示相对趋势，不构成可复现基准）：</p>
 
         <table>
             <thead>
@@ -179,7 +373,47 @@ __global__ void reduce_v4(float* g_data, float* g_out) {
             <strong>一个有趣的观察：</strong> 注意到V1只用了5.3%的理论带宽吗？这个naive版本的性能甚至不如CPU上跑一个单线程的for循环！GPU的强大来自于并行——当你没有有效地利用并行性时，GPU反而可能比CPU更慢。这就是为什么"优化"不是锦上添花，而是CUDA编程中不可或缺的一环。
         </div>
 
-        <h3>案例二——矩阵乘法完整优化之旅</h3>
+        <figure>
+<svg role="img" aria-labelledby="fig-red-title fig-red-desc" viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-red-title">并行规约各版本的带宽提升（教学示意）</title>
+<desc id="fig-red-desc">从交错寻址到顺序寻址、共享内存优化、warp shuffle 与 Cooperative Groups，带宽逐级提升，但每级的增益逐步递减。</desc>
+<line x1="40" y1="200" x2="600" y2="200" stroke="#94a3b8" stroke-width="1.4"/>
+<g fill="#2563eb">
+<rect x="70" y="190" width="70" height="10" rx="3"/><rect x="180" y="171" width="70" height="29" rx="3"/><rect x="290" y="142" width="70" height="58" rx="3"/><rect x="400" y="77" width="70" height="123" rx="3"/><rect x="510" y="49" width="70" height="151" rx="3"/>
+</g>
+<g fill="#0f172a" font-size="12" text-anchor="middle"><text x="105" y="222">V1</text><text x="215" y="222">V2</text><text x="325" y="222">V3</text><text x="435" y="222">V4</text><text x="545" y="222">V5</text></g>
+<g fill="#475569" font-size="11" text-anchor="middle"><text x="105" y="184">42</text><text x="215" y="165">119</text><text x="325" y="136">237</text><text x="435" y="71">501</text><text x="545" y="43">613</text></g>
+<text x="40" y="30" font-size="12.5" fill="#334155">带宽 GB/s（相对趋势）</text>
+</svg>
+<figcaption>并行规约各版本的内存带宽变化：前几版每级都有成倍提升，到最后一级只剩约 20% 增益——边际效益递减的具体体现。<strong>教学示意</strong>：数值为课堂演示估算。</figcaption>
+</figure>
+
+        <div class="widget">
+<h3>交互：逐版看带宽与增益</h3>
+<p>拖动滑块选择规约版本，看它与 V1 的加速比，以及相比上一版的边际增益。<strong>教学示意</strong>：使用本章表格中的演示数据。</p>
+<div class="control-row">
+  <label>版本 V <input type="range" id="r-v" min="1" max="5" value="1"><span class="readout" id="r-vv">V1</span></label>
+  <button type="button" id="r-demo">下一版</button>
+</div>
+<div class="readout" id="r-out">—</div>
+<p class="readout" id="r-note"></p>
+</div>
+<script>
+(function(){
+  var bw=[42.3,118.7,237.4,501.2,612.8], r=document.getElementById('r-v');
+  function upd(){
+    var i=+r.value-1, v=bw[i];
+    document.getElementById('r-vv').textContent='V'+(i+1);
+    document.getElementById('r-out').innerHTML='带宽 <b>'+v+'</b> GB/s ｜ 相对 V1：<b>'+(v/bw[0]).toFixed(1)+'x</b>';
+    document.getElementById('r-note').textContent=i===0?'基线版本。':'相比上一版边际增益约 '+((v/bw[i-1]-1)*100).toFixed(0)+'%。越到后面，同样的努力换来的提升越少。';
+  }
+  r.addEventListener('input',upd);
+  document.getElementById('r-demo').addEventListener('click',function(){r.value=(+r.value%5)+1;upd();});
+  upd();
+})();
+</script>
+
+        <h2>案例二 —— 矩阵乘法完整优化之旅</h2>
 
         <p>矩阵乘法是CUDA优化的"终极练兵场"。它既是深度学习中最核心的运算（全连接层、注意力机制都依赖它），也是最能体现各种优化技术效果的算法。下面我们从最naive的实现开始，经历六代优化。</p>
 
@@ -209,7 +443,7 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
 
         <p><strong>V6: Tensor Core (WMMA)</strong>——使用 <code>nvcuda::wmma</code> 命名空间中的WMMA（Warp Matrix Multiply-Accumulate）API，直接调用硬件上的Tensor Cores。单个warp（32个线程）协作计算一个16x16的矩阵乘累加，吞吐量远超纯CUDA core实现。</p>
 
-        <p>下面是在RTX 4090上测得的各版本性能（矩阵尺寸M=N=K=4096）：</p>
+        <p>下面是在 RTX 4090 上的各版本对比（矩阵尺寸 M=N=K=4096）（教学示意：下表数字为课堂演示估算，用于展示相对趋势，不构成可复现基准）：</p>
 
         <table>
             <thead>
@@ -264,7 +498,7 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
                     <td>2400.0x</td>
                     <td>78.0%</td>
                 </tr>
-            </balances>
+            </tbody>
         </table>
 
         <p>从V1到V6，加速比达到了惊人的2400倍。这不是说我们写了2400倍更高效的代码——而是说naive版本在GPU上跑得极其低效，连硬件潜力的0.1%都没用到。真正把优化做到极致时，使用的其实是硬件的"隐藏能力"——V6的Tensor Cores在普通CUDA C++代码中甚至无法直接调用，必须通过WMMA或cuBLAS等专用接口。</p>
@@ -273,7 +507,7 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
             <strong>重要认知：</strong> 不要被2400倍的加速比误导。V6之所以能比V1快这么多，很大程度上是因为V3引入了共享内存tiling（95倍提升），这是"概念性"的飞跃。V4到V5之间的提升（约1.3倍）是"工程性"的打磨。在真实的优化工作中，你首先要问的问题是："瓶颈在内存还是计算？瓶颈能不能被算法层面的改变消除？" 如果答案是"能"，那90%的优化空间就在那里，剩下的10%才是后面的微调。
         </div>
 
-        <h3>迭代优化方法论——APOD循环</h3>
+        <h2>迭代优化方法论 —— APOD 循环</h2>
 
         <p>上面两个案例的优化过程看起来很清晰，但那是"事后"的叙述——每一步都是方向正确的、效果可预测的。在真实场景中，事情远没有那么顺利。你很可能对一个地方优化了半天，发现没有效果，甚至更慢了。所以你需要一个系统化的方法论，我推荐 <strong>APOD</strong>（Assess, Parallelize, Optimize, Deploy）循环：</p>
 
@@ -288,13 +522,19 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
             <strong>常见陷阱：</strong> "一次改多个东西"是CUDA性能优化中最常见的错误。我见过太多人在一个版本中同时改了block size、共享内存大小、循环展开因子和寄存器用量——结果性能下降了，然后花了两周时间试图找出是哪个改动引起的。相信我，在CUDA中，每次只改一个变量比什么都重要。
         </div>
 
-        <h3>性能天花板判断——什么时候停止优化</h3>
+        <h2>性能天花板判断 —— 什么时候停止优化</h2>
 
         <p>学习CUDA的人往往会陷入一个陷阱：执着于"极致优化"，想把每一纳秒都榨出来。但现实中的工程不是学术研究——你需要在优化收益和投入时间之间做出权衡。怎么判断"够好了"？下面三个标准可以帮助你：</p>
 
         <p>第一，<strong>Roofline分析已经完成</strong>。你已经确认你的内核是memory-bound还是compute-bound，并且已经达到了对应roofline的80%以上。如果是memory-bound，你的带宽利用率已经远超50%，继续优化的空间可能不大了。</p>
 
         <p>第二，<strong>算一下arithmetic intensity（计算密度）</strong>——每个字节数据对应的浮点运算次数。如果你的arithmetic intensity已经接近或超过了硬件的"折点"（ridge point），说明你的瓶颈正在从内存转向计算。此时除非你能引入Tensor Cores或者使用更快的数学指令，否则收效甚微。</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="计算密度与折点公式，可横向滚动">
+        <math display="block" aria-label="计算密度等于浮点运算数除以字节数；roofline 折点等于峰值算力除以峰值带宽">
+<mrow><mi>I</mi><mo>=</mo><mfrac><mtext>FLOPs</mtext><mtext>Bytes</mtext></mfrac><mo>,</mo><mspace width="0.6em"/><mtext>折点</mtext><mo>=</mo><mfrac><msub><mi>P</mi><mtext>峰值</mtext></msub><msub><mi>B</mi><mtext>峰值</mtext></msub></mfrac></mrow>
+</math>
+        </div>
 
         <p>第三，<strong>边际效益已经低于你的时间成本</strong>。这是一个非常实际的考量。如果你花一周时间可以获得2倍加速，那非常值得。但如果花一个月只换来5%的提速，那可能你的时间更适合去做其他的优化——比如数据加载、CPU-GPU传输、或者算法本身的改进。这些领域往往被忽视，却有更大的优化空间。</p>
 
@@ -306,9 +546,19 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
             <strong>我的建议：</strong> 在开始任何优化之前，先设定一个"足够好"的标准。比如："达到cuBLAS的85%就算成功"，或者"让这个内核不再是整个pipeline的瓶颈就行"。有了这个标准，你就不会被"再优化一点点"的冲动牵着走。记住——平衡的性能优化，胜过偏执的局部最优。
         </div>
 
-        <h3>下章预告：CUDA 13.x新特性</h3>
+        <h2>下章预告：CUDA 13.x 新特性</h2>
 
         <p>这一章我们通过并行规约和矩阵乘法的优化案例，走完了从naive到极致优化的完整路径，还讨论了APOD方法论和"何时停止优化"的判断标准。我相信你现在已经有能力对一个任意的CUDA内核进行系统化分析和优化了。但CUDA本身还在快速进化——下一章，我们来看看截至2026年最新的CUDA 13.x带来了哪些新特性。从Tile Programming到CUDA Python 1.0，再到CompileIQ自动调优——这些新工具可能会彻底改变你写CUDA代码的方式。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Best Practices Guide》——内存优化、占用率与roofline分析：<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/">docs.nvidia.com/cuda/cuda-c-best-practices-guide</a>。</li>
+          <li>本章两个案例的带宽/ FLOPS 与加速比均为课堂演示估算，仅用于说明相对趋势与边际递减，不是可复现的基准数据。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="24.html">← 上一章</a>
@@ -316,7 +566,7 @@ __global__ void matmul_v1(const float* A, const float* B, float* C,
             <a href="26.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
