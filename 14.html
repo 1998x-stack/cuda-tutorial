@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第14章 Warp级别编程</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>Warp级别编程</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>Warp 级别编程</h1>
+          <p class="dek">warp 是 GPU 上真正同时执行的 32 个线程。投票、shuffle、Cooperative Groups 与 WMMA 让线程在寄存器之间直接通信，绕开共享内存，是 CUDA 优化的“最后一公里”。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。如果你觉得前面几章的内容已经让CUDA性能优化达到了极致，那这一章会刷新你的认知。前几章我们讨论的优化都是在block级别——共享内存、全局内存合并访问、原子操作——这些工具让一个block内的线程高效协作。但还有一个更底层的协作层次你还没用上：<strong>warp</strong>。</p>
 
@@ -54,7 +248,7 @@
             <strong>核心思想：</strong> warp级别编程 = 在硬件最自然的执行单元上做通信。寄存器↔寄存器直接交换数据，比通过共享内存快一个数量级。这是CUDA性能优化的"最后一级"优化手段。
         </div>
 
-        <h3>Warp投票函数</h3>
+        <h2>Warp 投票函数</h2>
 
         <p>投票函数（vote functions）是warp级别最简单的通信原语。它们允许一个warp内的线程"投票"——判断某个条件是否成立，并让所有线程知道结果。CUDA 9.0之后，所有投票函数都要求传入 <code>_sync</code> 后缀和 <code>mask</code> 参数（参与线程的bitmask）：</p>
 
@@ -113,7 +307,7 @@ __device__ float warp_reduce_ballot(float val, int tid, int N) {
             <strong>关于mask参数：</strong> CUDA 9.0引入的 <code>_sync</code> 后缀要求显式传递 <code>mask</code>。通常可以直接传 <code>0xFFFFFFFF</code>（所有32个线程参与）。但如果warp中的某些线程因为条件分支而"提前退出"了，传 <code>0xFFFFFFFF</code> 会导致这些线程的predicate为0——结果是正确的但效率可能降低。用 <code>__activemask()</code> 获取真正的活跃mask是一个好习惯。
         </div>
 
-        <h3>Warp Shuffle指令</h3>
+        <h2>Warp Shuffle 指令</h2>
 
         <p>Warp shuffle 是CUDA中性价比最高的优化工具之一。它允许warp内的线程直接互相读取对方的寄存器值，而不需要经过共享内存。这意味着：零共享内存延迟、零bank conflict、不需要 <code>__syncthreads()</code>。</p>
 
@@ -125,7 +319,32 @@ __device__ float warp_reduce_ballot(float val, int tid, int N) {
             <li><code>__shfl_xor_sync(mask, val, laneMask)</code>：线程i获取线程i^laneMask的val（蝶形交换，用于FFT等）</li>
         </ul>
 
+        <p>用公式写，每一步叠加的递推关系是（第 k 轮，offset = 2<sup>k−1</sup>）：</p>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="前缀和逐轮递推公式，可横向滚动">
+        <math display="block" aria-label="第 k 轮：位置 i 在 i 不小于 2 的 k 减 1 次方时，加上位置 i 减 2 的 k 减 1 次方上一轮的值">
+<mrow><msubsup><mi>v</mi><mi>i</mi><mrow><mo>(</mo><mi>k</mi><mo>)</mo></mrow></msubsup><mo>=</mo><msubsup><mi>v</mi><mi>i</mi><mrow><mo>(</mo><mi>k</mi><mo>−</mo><mn>1</mn><mo>)</mo></mrow></msubsup><mo>+</mo><msubsup><mi>v</mi><mrow><mi>i</mi><mo>−</mo><msup><mn>2</mn><mrow><mi>k</mi><mo>−</mo><mn>1</mn></mrow></msup></mrow><mrow><mo>(</mo><mi>k</mi><mo>−</mo><mn>1</mn><mo>)</mo></mrow></msubsup><mo>,</mo><mspace width="0.4em"/><mi>i</mi><mo>≥</mo><msup><mn>2</mn><mrow><mi>k</mi><mo>−</mo><mn>1</mn></mrow></msup></mrow>
+</math>
+        </div>
+
         <p>下面是一个完整的warp级inclusive scan（前缀和）实现——不需要共享内存：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-scan-title fig-scan-desc" viewBox="0 0 620 230" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-scan-title">warp shuffle 前缀和（Hillis–Steele）逐轮叠加</title>
+<desc id="fig-scan-desc">四个线程的值经过 offset=1、offset=2 两轮叠加，每个线程都得到左侧所有线程之和。真实 warp 有 32 个线程，同样的模式共五轮。</desc>
+<text x="14" y="48" font-size="12.5" fill="#334155">初始</text>
+<text x="14" y="128" font-size="12.5" fill="#334155">offset=1</text>
+<text x="14" y="208" font-size="12.5" fill="#334155">offset=2</text>
+<g fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"><rect x="80" y="26" width="80" height="36" rx="7"/><rect x="180" y="26" width="80" height="36" rx="7"/><rect x="280" y="26" width="80" height="36" rx="7"/><rect x="380" y="26" width="80" height="36" rx="7"/></g>
+<g fill="#0f172a" font-size="14" text-anchor="middle"><text x="120" y="50">1</text><text x="220" y="50">2</text><text x="320" y="50">3</text><text x="420" y="50">4</text></g>
+<g fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"><rect x="80" y="106" width="80" height="36" rx="7"/><rect x="180" y="106" width="80" height="36" rx="7"/><rect x="280" y="106" width="80" height="36" rx="7"/><rect x="380" y="106" width="80" height="36" rx="7"/></g>
+<g fill="#0f172a" font-size="14" text-anchor="middle"><text x="120" y="130">1</text><text x="220" y="130">3</text><text x="320" y="130">5</text><text x="420" y="130">7</text></g>
+<g fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"><rect x="80" y="186" width="80" height="36" rx="7"/><rect x="180" y="186" width="80" height="36" rx="7"/><rect x="280" y="186" width="80" height="36" rx="7"/><rect x="380" y="186" width="80" height="36" rx="7"/></g>
+<g fill="#0f172a" font-size="14" text-anchor="middle"><text x="120" y="210">1</text><text x="220" y="210">3</text><text x="320" y="210">6</text><text x="420" y="210">10</text></g>
+<text x="486" y="130" font-size="12" fill="#64748b">每轮 offset 翻倍</text>
+</svg>
+<figcaption>warp 内 inclusive scan 的迭代叠加：第 k 轮令 <code>offset = 2<sup>k</sup></code>，线程 i 把自己的值加上 i−offset 线程的上一轮值。<strong>教学示意</strong>：此处只画 4 个线程便于阅读，真实 warp 为 32 线程、共 5 轮；每轮都从寄存器读取，不经过共享内存。</figcaption>
+</figure>
 
         <pre><code>// Warp级 Inclusive Scan（前缀和） —— 纯寄存器操作
 __device__ float warp_inclusive_scan(float val) {
@@ -154,11 +373,38 @@ __device__ float warp_inclusive_scan(float val) {
 
         <p>这段代码不需要任何共享内存，不需要 <code>__syncthreads()</code>，完全在寄存器之间完成。而且因为shuffle指令的延迟很低（通常约几个时钟周期），整个scan可以在几十个周期内完成——比共享内存版本快几倍。</p>
 
+        <div class="widget">
+<h3>交互：逐轮执行 warp 内 inclusive scan</h3>
+<p>下方显示 0–7 号线程的当前值。点“执行下一轮”，线程 i 会加上 i−offset 线程的<em>上一轮</em>值，offset 每轮翻倍。<strong>教学示意</strong>：只展示 8 个线程便于阅读。</p>
+<div class="readout" id="sc-lanes">—</div>
+<div class="readout" id="sc-round">—</div>
+<div class="control-row">
+  <button type="button" id="sc-next">执行下一轮</button>
+  <button type="button" id="sc-reset">重置</button>
+</div>
+</div>
+<script>
+(function(){
+  var base=[1,2,3,4,5,6,7,8], cur=base.slice(), round=0, maxR=3;
+  function render(){
+    document.getElementById('sc-lanes').innerHTML='线程 0–7：<b>'+cur.join('  ')+'</b>';
+    document.getElementById('sc-round').textContent=round===0?'轮次：0 / '+maxR+'（初始）':'轮次：'+round+' / '+maxR+'（offset 已翻倍 '+round+' 次）';
+  }
+  document.getElementById('sc-next').addEventListener('click',function(){
+    if(round>=maxR){cur=base.slice();round=0;}
+    else{var off=1<<round, prev=cur.slice(); cur=prev.map(function(v,i){return i>=off?v+prev[i-off]:v;}); round++;}
+    render();
+  });
+  document.getElementById('sc-reset').addEventListener('click',function(){cur=base.slice();round=0;render();});
+  render();
+})();
+</script>
+
         <div class="warning">
             <strong>重要限制：</strong> Warp shuffle 只在一个warp内有效（32个线程）。跨warp的数据交换仍然需要共享内存。所以常见的模式是：warp内用shuffle，warp之间用共享内存。另外，shuffle操作的数据类型必须是32位（int/float）或64位（double/long long）——不支持8位或16位类型。
         </div>
 
-        <h3>Cooperative Groups入门</h3>
+        <h2>Cooperative Groups 入门</h2>
 
         <p>Cooperative Groups是CUDA 9.0引入的一个编程模型，它为线程分组提供了更灵活、更安全的抽象。传统的 <code>__shfl_sync</code> 要求你手动传入mask，但Cooperative Groups让你以类型安全的方式操作线程组。</p>
 
@@ -204,7 +450,7 @@ __global__ void kernel_with_cg(const float *input, float *output, int N) {
             <strong>建议：</strong> 新项目推荐使用Cooperative Groups API来替代原始的 <code>__shfl_sync</code> 调用。代码更清晰、更安全。但如果你需要极致的性能控制（比如自定义mask处理部分活跃的warp），原始的warp内在函数仍然不可替代。
         </div>
 
-        <h3>Warp Matrix Multiply-Accumulate (WMMA)</h3>
+        <h2>Warp 矩阵乘累加（WMMA）</h2>
 
         <p>WMMA是CUDA 9.0（Volta架构）随Tensor Cores一起引入的API，用于利用硬件上的矩阵乘累加单元。它抽象了Tensor Core的编程接口——你不用直接操作warp级的矩阵分块，而是通过"fragment"声明来让编译器为你生成正确的指令。</p>
 
@@ -247,7 +493,7 @@ __global__ void wmma_matmul(half *A, half *B, float *C,
             <strong>性能潜力：</strong> 在A100上，一个SM每个周期可以执行4个Tensor Core操作——每个操作做 <code>4x4x4</code> 的矩阵乘法（FP16）。换算下来，A100的Tensor Core峰值吞吐达到312 TFLOPS（FP16），是普通CUDA核心的8倍以上。WMMA让你以不到20行代码就能触及这个性能。
         </div>
 
-        <h3>Warp级别的条件执行</h3>
+        <h2>Warp 级别的条件执行</h2>
 
         <p>最后一个话题：warp级别的条件执行优化。我们知道warp内线程是"锁步"执行的——如果出现分支分歧（divergence），两个分支会被串行执行。但有时候，你可以利用warp投票函数来避免这种分歧：</p>
 
@@ -298,12 +544,22 @@ __global__ void kernel_ballot_optimized(float *data, float threshold, int N) {
         </div>
 
         <div class="highlight">
-            <strong>真实"踩坑"故事：</strong> 我维护过一个生产环境中的规约kernel，它规约的是一个非常大的数组（数亿个元素）。最初的版本使用共享内存做了完整的树形规约——性能不错，但也不出彩。一个同事问我："你最后几轮规约active线程数已经小于32了，为什么还用共享内存？"我一看代码——确实，最后几轮（s=16, 8, 4, 2, 1）每个warp独自工作，但我们的代码还在用共享内存来通信。我把最后5轮改成warp shuffle，kernel整体快了几乎2倍。为什么差别这么大？因为最后几轮其实包含了规约中大约一半的数据搬移操作！而且warp shuffle避免了共享内存的读写和同步开销。这个教训是：<strong>不要满足于"还可以"的性能，检查你代码的每一个部分——特别是那些你习以为常的"模板"——很可能隐藏着巨大的优化空间。</strong>
+            <strong>真实"踩坑"故事：</strong> 我维护过一个生产环境中的规约kernel，它规约的是一个非常大的数组（数亿个元素）。最初的版本使用共享内存做了完整的树形规约——性能不错，但也不出彩。一个同事问我："你最后几轮规约active线程数已经小于32了，为什么还用共享内存？"我一看代码——确实，最后几轮（s=16, 8, 4, 2, 1）每个warp独自工作，但我们的代码还在用共享内存来通信。我把最后5轮改成warp shuffle，kernel整体快了几乎2倍。为什么差别这么大？因为最后几轮其实包含了规约中大约一半的数据搬移操作！而且warp shuffle避免了共享内存的读写和同步开销。这个教训是：<strong>不要满足于"还可以"的性能，检查你代码的每一个部分——特别是那些你习以为常的"模板"——很可能隐藏着巨大的优化空间。</strong>（教学示意：具体的“快 2 倍”与元素规模来自当时的生产环境，不具普遍性。）
         </div>
 
         <p>Warp级别编程代表了CUDA优化"最深"的层次——你已经在硬件最原生的执行单元上做操作了。这一章我们学习了投票函数（all/any/ballot）、warp shuffle、Cooperative Groups、WMMA的Tensor Core编程，以及warp级别的条件执行优化。掌握这些工具，你就真正掌握了CUDA性能优化的全部武器库。</p>
 
         <p>下一章我们要从"写代码"转向"分析和调试"——<strong>性能分析工具</strong>。我们会学习Nsight Systems、Nsight Compute等工具，它们能让你看到你的代码到底在GPU上做了什么。毕竟，光会优化不够——你得知道优化什么、怎么验证优化有效。第十五章见。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Warp 投票 / Shuffle 函数、Cooperative Groups：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>；WMMA：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#wmma">docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#wmma</a>。</li>
+          <li>文中 A100 Tensor Core 峰值（FP16）等性能量级仅用于说明数量级，实际以对应型号官方规格表为准。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="13.html">← 上一章</a>
@@ -311,7 +567,7 @@ __global__ void kernel_ballot_optimized(float *data, float threshold, int N) {
             <a href="15.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
