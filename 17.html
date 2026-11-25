@@ -4,12 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第17章 性能优化方法论</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +232,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>性能优化方法论</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>性能优化方法论</h1>
+          <p class="dek">没有方法论的优化就是碰运气。APOD（Assess → Parallelize → Optimize → Deploy）把优化变成一套可重复、可度量的流程：先量出瓶颈，再从收益最大的那件事做起。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。Optimization without methodology = random tweaking。我见过太多 CUDA 新手兴奋地写出第一个能够正确运行的 kernel 后，就陷入了"玄学优化"的泥潭——今天加几个寄存器，明天改一下 block size，后天换一种循环展开方式，每次跑出来结果都小有变化，但没有一次是决定性的提升。</p>
 
@@ -54,9 +248,29 @@
             <strong>本章的结构：</strong> 我们先讲 APOD 框架的理论，然后深入到每个环节的具体操作——如何定位瓶颈、如何优化 occupancy、以及如何用一套检查清单确保没有遗漏。最后，你会看到一个真实的 47 倍优化故事。读完这一章，你将不再是一个"凭感觉优化"的 CUDA 程序员，而是一个有方法、有工具的优化专家。
         </div>
 
-        <h3>APOD循环详解</h3>
+        <h2>APOD 循环详解</h2>
 
         <p>APOD 不是 NVIDIA 拍脑袋想出来的噱头——它是从成千上万个实际 CUDA 项目的优化经验中提炼出来的最佳实践。下面是每个阶段的详细解读：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-apod-title fig-apod-desc" viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-apod-title">APOD 优化循环</title>
+<desc id="fig-apod-desc">Assess 评估、Parallelize 并行化、Optimize 优化、Deploy 部署四个阶段首尾相接，构成一个可重复的循环。</desc>
+<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#475569"/></marker></defs>
+<g fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"><rect x="50" y="24" width="200" height="52" rx="10"/><rect x="370" y="24" width="200" height="52" rx="10"/><rect x="370" y="174" width="200" height="52" rx="10"/><rect x="50" y="174" width="200" height="52" rx="10"/></g>
+<g fill="#0f172a" font-size="14" text-anchor="middle">
+<text x="150" y="48">1 · Assess</text><text x="150" y="66" font-size="12" fill="#475569">用 profiler 找瓶颈</text>
+<text x="470" y="48">2 · Parallelize</text><text x="470" y="66" font-size="12" fill="#475569">让计算尽量并行</text>
+<text x="470" y="198">3 · Optimize</text><text x="470" y="216" font-size="12" fill="#475569">从访存改起</text>
+<text x="150" y="198">4 · Deploy</text><text x="150" y="216" font-size="12" fill="#475569">验证并回归</text>
+</g>
+<g stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+<path d="M250 50 L362 50"/><path d="M470 76 L470 168"/><path d="M370 200 L258 200"/><path d="M150 174 L150 84"/>
+</g>
+<text x="310" y="128" font-size="13" text-anchor="middle" fill="#1d4ed8">收益递减 → 再循环</text>
+</svg>
+<figcaption>NVIDIA 推荐的 APOD 循环：先评估、再并行化、然后从收益最大的访存优化做起、最后部署验证。每跑完一圈，根据测量结果决定是否再来一轮——收益递减到不值得继续时就停手。</figcaption>
+</figure>
 
         <ul>
             <li><strong>Assess（评估）</strong>：首先确定你的程序"现状如何"。用 profiler（nsys / ncu）测量当前性能，记录 baseline——包括运行时间、带宽利用率、计算吞吐量。问自己一个问题："当前性能距离硬件理论极限还有多远？" 如果已经接近了（比如内存带宽达到 80% 以上），那优化空间就不大了，应该考虑换个方向。这个阶段的关键是：<strong>用数据说话，而不是感觉</strong>。</li>
@@ -71,7 +285,7 @@
             <strong>APOD 的反直觉真理：</strong> 很多时候"Assess"阶段就揭示了问题的答案——你发现瓶颈根本不在你以为的地方。我曾见过一个项目，团队花了两周优化 kernel，结果 nsys timeline 一看，80% 的时间花在 CPU 端的 <code>cudaMemcpy</code> 上，kernel 本身只跑了 10%。花两周优化那 10% 而不优化那 80%，是典型的本末倒置。Assess 的作用就是在你花冤枉钱之前，先告诉你钱该往哪儿花。
         </div>
 
-        <h3>瓶颈定位</h3>
+        <h2>瓶颈定位</h2>
 
         <p>在开始优化之前，你必须弄清楚一个核心问题：<strong>我的 kernel 到底是 compute-bound 还是 memory-bound？</strong> 这两个方向的优化策略完全不同，搞反了是在做无用功。下面这张表总结了如何用 profiling metrics 来定位瓶颈类型：</p>
 
@@ -114,9 +328,16 @@
 
         <p>在 ncu 输出中，有一个非常直观的指标叫 <code>Speed Of Light</code>（SOL），它会直接告诉你 kernel 是落在 compute 还是 memory 的"光速"上。如果 SOL Memory 接近 100% 而 SOL Compute 很低 → memory-bound；反过来 → compute-bound。两个都很低 → 你的 kernel 有严重问题。</p>
 
-        <h3>Occupancy调优实战</h3>
+        <h2>Occupancy 调优实战</h2>
 
         <p>上一章我们介绍了 occupancy 的基本概念。这里我们深入实战——如何通过调整 kernel 的资源配置来达到最优 occupancy。关键是理解 register 和 shared memory 对 occupancy 的定量影响。</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="占用率公式，可横向滚动">
+        <math display="block" aria-label="占用率等于每 SM 实际活跃 warp 数除以每 SM 最大 warp 数再乘 100%">
+<mrow><mtext>占用率</mtext><mo>=</mo><mfrac><msub><mi>W</mi><mtext>活跃</mtext></msub><msub><mi>W</mi><mtext>最大</mtext></msub></mfrac><mo>×</mo><mn>100</mn><mo>%</mo></mrow>
+</math>
+        </div>
+        <p>而 <code>W</code><sub>活跃</sub> 又受三个资源的上限共同约束：寄存器、共享内存、以及每 SM 的最大 block 数。取三者中最小的那个，就是你能达到的占用率天花板。</p>
 
         <p>GPU 的 SM 中资源分配是一个"零和博弈"：每个线程多用一个寄存器，能同时驻留的线程就少一批。下面这个公式可以帮你快速估算 occupancy 的上限：</p>
 
@@ -159,11 +380,46 @@ __global__ void my_kernel() { ... }</code></pre>
 
         <p>Occupancy 调优的一个实用建议是：<strong>从 ncu 的 Occupancy 报告看起</strong>——它会精确告诉你当前 kernel 的 occupancy 限制因素是什么（registers / shared memory / block size），然后你再有针对性地去解决那个限制因素。</p>
 
+        <div class="widget">
+<h3>交互：资源上限如何决定占用率</h3>
+<p>调整每线程寄存器数与每 block 共享内存，估算一个 SM 上能达到的占用率。<strong>教学示意</strong>：按 A100（每 SM 65536 寄存器、64 个 warp 上限、32 个 block 上限、可用共享内存约 164 KB）的简化模型计算，真实分配粒度与架构相关。</p>
+<div class="control-row">
+  <label>寄存器/线程 <input type="range" id="o-r" min="8" max="128" step="8" value="64"><span class="readout" id="o-rv">64</span></label>
+  <label>block 线程数 <select id="o-b"><option>64</option><option>128</option><option selected>256</option><option>512</option><option>1024</option></select></label>
+  <label>共享内存/block (KB) <input type="range" id="o-s" min="0" max="100" step="4" value="0"><span class="readout" id="o-sv">0</span></label>
+  <button type="button" id="o-demo">加载受限示例</button>
+</div>
+<div class="readout" id="o-out">—</div>
+<p class="readout" id="o-why"></p>
+</div>
+<script>
+(function(){
+  var R=document.getElementById('o-r'), B=document.getElementById('o-b'), S=document.getElementById('o-s');
+  var MAXW=64, MAXB=32, SMEM=164*1024;
+  function upd(){
+    var r=+R.value, b=+B.value, s=+S.value*1024;
+    document.getElementById('o-rv').textContent=r;
+    document.getElementById('o-sv').textContent=(s/1024);
+    var warpsPerBlock=b/32, regsPerBlock=r*b;
+    var blocksRegs=Math.floor(65536/regsPerBlock);
+    var blocksShmem=s>0?Math.floor(SMEM/s):MAXB;
+    var blocks=Math.min(MAXB, blocksRegs, blocksShmem);
+    var warps=Math.min(MAXW, blocks*warpsPerBlock), occ=warps/MAXW*100;
+    document.getElementById('o-out').innerHTML='每 SM 活跃 warp：<b>'+warps+'</b> / '+MAXW+' → 占用率约 <b>'+occ.toFixed(0)+'%</b>';
+    var limit = (blocksRegs<=blocksShmem && blocksRegs<=MAXB) ? '寄存器' : ((blocksShmem<blocksRegs && blocksShmem<=MAXB) ? '共享内存' : '每 SM block 数上限');
+    document.getElementById('o-why').textContent='当前限制因素：'+limit+'。降低寄存器用量或共享内存，往往比单纯增大 block 更有效。';
+  }
+  [R,B,S].forEach(function(e){e.addEventListener('input',upd);e.addEventListener('change',upd);});
+  document.getElementById('o-demo').addEventListener('click',function(){R.value=128;S.value=100;upd();});
+  upd();
+})();
+</script>
+
         <div class="warning">
             <strong>Occupancy 不等于性能！</strong> 这是 CUDA 优化中最常见的误解。高 occupancy 只是为 GPU 提供了更多隐藏延迟的"弹药"，但不代表这些延迟真的需要被隐藏。如果一个 kernel 是 compute-bound，增加 occupancy 并不能让计算单元跑得更快。反之，一个 25% occupancy 的 kernel 如果每个线程都做了大量的独立计算（ILP 很高），它的性能可能比 100% occupancy 的 kernel 更好。所以：<strong>Occupancy 是一个手段，不是目标</strong>。
         </div>
 
-        <h3>矩阵乘法优化案例（完整流程）</h3>
+        <h2>矩阵乘法优化案例（完整流程）</h2>
 
         <p>没有什么比一个完整的实战案例更能说明 APOD 方法论的力量了。我们以最经典的矩阵乘法（GEMM）为例，看看一个 naive 的 kernel 如何一步步被优化到接近硬件理论极限。</p>
 
@@ -226,13 +482,13 @@ __global__ void matmul_vec4(float *A, float *B, float *C, int N) {
 // 相比tiled版本: 额外 ~1.6x speedup
 // 总体相比naive: ~24x speedup</code></pre>
 
-        <p>从 naive 到最终版本，我们的 GEMM kernel 从 25 GFLOPS 提升到了 600+ GFLOPS（在 A100 上），每一步都对应 APOD 循环中的一次迭代。值得注意的是：<strong>第1步到第2步的 15 倍提升占了总提升的绝大部分</strong>——这就是方法论的价值：做最有效的事。</p>
+        <p>从 naive 到最终版本，我们的 GEMM kernel 从 25 GFLOPS 提升到了 600+ GFLOPS（在 A100 上），每一步都对应 APOD 循环中的一次迭代。（教学示意：本节 GEMM 的各版性能数字与加速比为课堂演示估算，不同显卡、数据规模与编译器版本下差异很大，仅用于说明“改动顺序决定收益量级”，不是可复现的基准。）值得注意的是：<strong>第1步到第2步的 15 倍提升占了总提升的绝大部分</strong>——这就是方法论的价值：做最有效的事。</p>
 
         <div class="highlight">
             <strong>这个故事告诉我们：</strong> 优化的 80% 收益通常来自第一轮 APOD 循环（找到最关键的瓶颈并解决它）。后面几轮循环虽然也能带来提升，但收益递减得非常快。永远先做"那件最大的事"——对 GEMM 来说，就是把全局内存访问改成共享内存 tiling；对很多 kernel 来说，就是修复合并访问。不要在小事上浪费大块时间。
         </div>
 
-        <h3>优化检查清单</h3>
+        <h2>优化检查清单</h2>
 
         <p>最后，我整理了一份经过实战检验的优化检查清单。按优先级从高到低排列。每次你写了一个新的 CUDA kernel，照着这个清单走一遍，确保没有遗漏最重要的优化：</p>
 
@@ -253,7 +509,7 @@ __global__ void matmul_vec4(float *A, float *B, float *C, int N) {
             <strong>清单的使用方式：</strong> 不要一次性把所有优化都做一遍——那样你会失去"哪项改动真正带来了提升"的认知。正确的做法是：一次只做一项优化，跑 benchmark 看效果，记录提升数据。如果某项优化没有带来预期的提升，可以回退。每条记录都是你对 GPU 行为的理解加深一步。
         </div>
 
-        <h3>一个真实的优化故事</h3>
+        <h2>一个真实的优化故事</h2>
 
         <p>我在之前的一家公司参与过一个分子动力学（molecular dynamics）模拟的 CUDA 化项目。项目开始时，整个模拟跑一次需要 4.2 秒。团队的目标是进入 100 毫秒以内——约 40 倍加速。</p>
 
@@ -265,9 +521,19 @@ __global__ void matmul_vec4(float *A, float *B, float *C, int N) {
             <li><strong>第4轮 APOD</strong>（Assess → 发现剩下的时间主要是 CPU 端的粒子排序 → 改用 GPU 上的 Thrust::sort）：0.11s → 0.09s</li>
         </ul>
 
-        <p>最终的加速比是 <strong>47 倍</strong>。重点在于：80% 的收益来自第一轮 APOD 循环。如果团队一开始就冲进去优化数学函数（而不是先修好访存模式），他们可能花三倍的时间只得到不到三分之一的收益。方法论决定了你努力的回报率。</p>
+        <p>最终的加速比是 <strong>47 倍</strong>。（教学示意：这是一次具体项目的实测结果，不具普遍性。）重点在于：80% 的收益来自第一轮 APOD 循环。如果团队一开始就冲进去优化数学函数（而不是先修好访存模式），他们可能花三倍的时间只得到不到三分之一的收益。方法论决定了你努力的回报率。</p>
 
         <p>在下一章，我们将暂时放下"如何优化"这个问题，先了解一下 CUDA 庞大而精彩的库生态。很多时候，你需要的 kernel 别人已经帮你写好了——cuBLAS、cuFFT、Thrust 等库提供了高度优化的实现，直接用它们，你连优化都不用做。学会"偷懒"，才是高效 CUDA 程序员的终极技能。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Best Practices Guide》——APOD 流程、占用率与访存优化：<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/">docs.nvidia.com/cuda/cuda-c-best-practices-guide</a>。</li>
+          <li>NVIDIA Nsight Compute 文档——Speed Of Light、Occupancy 与瓶颈分析：<a href="https://docs.nvidia.com/nsight-compute/">docs.nvidia.com/nsight-compute</a>。</li>
+        </ul>
+      </section>
+
+      </article>
 
         <div class="footer-nav">
             <a href="16.html">← 上一章</a>
@@ -275,7 +541,7 @@ __global__ void matmul_vec4(float *A, float *B, float *C, int N) {
             <a href="18.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
