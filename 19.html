@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第19章 CUDA Graph</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +233,14 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>CUDA Graph</h1>
+          <p class="dek">当内核又多又小时，CPU 逐个下发任务的延迟会超过 GPU 干活的时间。CUDA Graph 把一串启动“录成”一张依赖图，一次 launch 让 GPU 连续执行，把 CPU-GPU 往返开销降到最低。</p>
+        </header>
 
-        <h2>CUDA Graph</h2>
 
         <p>大家好，我是你们的讲师。如果你已经从第18章了解了CUDA的库生态，那你一定已经注意到一个模式：<strong>几乎所有高性能CUDA编程的优化技巧，最终都在做同一件事——减少CPU和GPU之间的交互开销</strong>。今天我们要讲的 CUDA Graph 就是这条路上的一个里程碑。它从根源上解决了一个长期被忽视的问题：当你的模型推理代码需要重复启动大量小内核时，CPU下发任务的时间可能比GPU真正干活的时间还长。</p>
 
@@ -54,11 +250,42 @@
             <strong>一句话理解：</strong> 传统方式是CPU每次给GPU下达一条指令，等GPU执行完再下一条；CUDA Graph是一次性给GPU一整本"乐高说明书"，GPU自己照着拼，CPU可以去做别的事。
         </div>
 
-        <h3>为什么需要CUDA Graph——kernel launch overhead</h3>
+        <h2>为什么需要CUDA Graph——kernel launch overhead</h2>
 
         <p>你知道启动一个CUDA kernel的开销有多大吗？很多人以为 <code>kernel&lt;&lt;&lt;grid, block&gt;&gt;&gt;()</code> 就是一瞬间的事——往寄存器里写几个参数，然后硬件就开始干活了。但实际上，从CPU线程发起一个kernel launch到GPU真正开始执行，中间需要经过驱动栈的层层处理：参数校验、命令缓冲区构建、上下文切换、硬件调度。在CUDA 10.x时代，单次kernel launch的延迟大约在 5-15 微秒。这个数字对大规模kernel来说微不足道——如果内核跑1000微秒，5微秒的开销确实可以忽略。但问题出在推理场景：很多小batch的推理内核执行时间只有几微秒，那么launch overhead就变成了实实在在的瓶颈。</p>
 
         <p>下面这张表清晰地展示了两者的差异：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-graph-title fig-graph-desc" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-graph-title">逐个下发 vs CUDA Graph 一次下发</title>
+<desc id="fig-graph-desc">上行为传统方式，内核之间存在启动开销间隙；下行为 CUDA Graph，一次 launch 后 GPU 连续执行。</desc>
+<text x="16" y="46" font-size="12.5" fill="#334155">传统独立调度</text>
+<rect x="100" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="154" y="64" width="18" height="30" fill="#fecaca" stroke="#dc2626"/>
+<rect x="172" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="226" y="64" width="18" height="30" fill="#fecaca" stroke="#dc2626"/>
+<rect x="244" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="298" y="64" width="18" height="30" fill="#fecaca" stroke="#dc2626"/>
+<rect x="316" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="370" y="64" width="18" height="30" fill="#fecaca" stroke="#dc2626"/>
+<rect x="388" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="442" y="64" width="18" height="30" fill="#fecaca" stroke="#dc2626"/>
+<rect x="460" y="64" width="54" height="30" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<text x="524" y="84" font-size="11.5" fill="#b91c1c">← 每个间隙都是一次 launch 开销</text>
+<text x="16" y="156" font-size="12.5" fill="#334155">CUDA Graph</text>
+<rect x="100" y="170" width="414" height="30" rx="4" fill="#99f6e4" stroke="#0d9488" stroke-width="1.4"/>
+<text x="307" y="190" font-size="12" text-anchor="middle" fill="#115e59">一次 cudaGraphLaunch，GPU 连续执行</text>
+<line x1="100" y1="162" x2="100" y2="170" stroke="#0d9488" stroke-width="2"/>
+<line x1="60" y1="88" x2="60" y2="185" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="16" y="140" font-size="11" fill="#64748b">时间 →</text>
+<rect x="232" y="228" width="14" height="12" fill="#93c5fd" stroke="#2563eb"/>
+<text x="252" y="239" font-size="11.5" fill="#475569">内核执行</text>
+<rect x="330" y="228" width="14" height="12" fill="#fecaca" stroke="#dc2626"/>
+<text x="350" y="239" font-size="11.5" fill="#475569">启动开销（CPU↔GPU 往返）</text>
+</svg>
+<figcaption>同样一串内核，逐个下发时内核之间夹着一段段启动开销，GPU 频繁空转；CUDA Graph 把整串依赖录成一张图，只下发一次，内核之间不再有空隙。内核越小、数量越多，上面那排红色间隙占比越大，Graph 的收益就越明显。</figcaption>
+</figure>
 
         <table>
             <thead>
@@ -97,7 +324,15 @@
             </tbody>
         </table>
 
-        <h3>图的构建方式</h3>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="启动开销占比公式，可横向滚动">
+        <math display="block" aria-label="启动开销占比等于 n 乘单次启动延迟，除以同项与内核总执行时间之和">
+<mrow><mtext>开销占比</mtext><mo>=</mo><mfrac><mrow><mi>n</mi><mo>·</mo><msub><mi>t</mi><mtext>launch</mtext></msub></mrow><mrow><mi>n</mi><mo>·</mo><msub><mi>t</mi><mtext>launch</mtext></msub><mo>+</mo><munder><mo>Σ</mo><mi>k</mi></munder><msub><mi>t</mi><mtext>kernel</mtext></msub></mrow></mfrac></mrow>
+</math>
+        </div>
+
+        <p>分子随内核数量 n 线性增长，分母里的内核总时间也跟着长，所以真正决定成败的是<strong>单个内核时长与单次启动延迟的比值</strong>：内核越短、数量越多，启动开销占比越高，Graph 越划算。</p>
+
+        <h2>图的构建方式</h2>
 
         <p>CUDA Graph提供了两种构建图的方式：<strong>显式API</strong> 和 <strong>Stream Capture</strong>。先看显式API的方式——顾名思义，你手动创建每个节点，定义节点之间的依赖关系。</p>
 
@@ -158,7 +393,39 @@ cudaStreamEndCapture(stream, &amp;graph);
             <strong>实践中推荐Stream Capture。</strong> 绝大多数情况下，你只需要把现有的推理循环代码用 <code>BeginCapture</code> / <code>EndCapture</code> 包起来即可。你的代码改动量最小，却可以获得显著的性能提升。显式API通常只在需要动态图结构或特殊节点类型时使用。
         </div>
 
-        <h3>图的实例化与执行</h3>
+        <div class="widget">
+<h3>交互：多少个内核才值得上 CUDA Graph？</h3>
+<p>设定内核数量与单内核时长，比较传统逐个下发与 CUDA Graph 一次下发的总时间（<strong>教学示意</strong>：单次 launch 取 8 µs，Graph 一次 launch 取 10 µs，忽略其他开销）。</p>
+<div class="control-row">
+  <label>内核数量 n <input type="range" id="cg-n" min="1" max="200" value="60"><span class="readout" id="cg-nv">60</span></label>
+  <label>单内核时长 (µs) <input type="range" id="cg-t" min="1" max="200" value="5"><span class="readout" id="cg-tv">5</span></label>
+  <button type="button" id="cg-demo">切到“内核很重”</button>
+</div>
+<div class="readout" id="cg-out">—</div>
+<p class="readout" id="cg-note"></p>
+</div>
+<script>
+(function(){
+  var L=8, G=10;
+  var n=document.getElementById('cg-n'), t=document.getElementById('cg-t');
+  function upd(){
+    var N=+n.value, T=+t.value;
+    var trad=N*L+N*T, graph=G+N*T, sp=trad/graph, ov=N*L/trad*100;
+    document.getElementById('cg-nv').textContent=N;
+    document.getElementById('cg-tv').textContent=T;
+    document.getElementById('cg-out').innerHTML='传统 <b>'+trad+' µs</b> → Graph <b>'+graph+' µs</b>，加速 <b>'+sp.toFixed(2)+'×</b>（启动开销占比 '+ov.toFixed(0)+'%）';
+    document.getElementById('cg-note').textContent=(ov>30)
+      ? '启动开销占比很高：内核又多又小，CUDA Graph 收益明显。'
+      : (ov<10?'启动开销占比低：单内核已经很重，Graph 收益有限。':'启动开销与执行时间相当，收益中等。');
+  }
+  n.addEventListener('input',upd);
+  t.addEventListener('input',upd);
+  document.getElementById('cg-demo').addEventListener('click',function(){ t.value=(+t.value<50)?200:2; upd(); });
+  upd();
+})();
+</script>
+
+        <h2>图的实例化与执行</h2>
 
         <p>构建完图之后，还不能直接执行。你需要将 <code>cudaGraph_t</code> "编译"成一个可执行实例 <code>cudaGraphExec_t</code>。这个过程叫做<strong>实例化</strong>（instantiation），类似于将源代码编译成可执行文件。实例化过程中，CUDA驱动会做各种优化：移除冗余同步、合并相邻操作、优化依赖顺序等。</p>
 
@@ -198,7 +465,7 @@ cudaGraphExecDestroy(graphExec);</code></pre>
             <strong>性能的关键洞察：</strong> 实例化后的可执行图在执行时，CPU只需要向GPU发送一个极简的"启动信号"，不再需要逐个下发每个kernel的描述符和参数。对于包含几十个kernel的推理图来说，launch overhead从几百微秒降到了个位数微秒。如果你的GPU时间利用率（通过Nsight查看"Streaming Multiprocessor Activity"）低于80%，CUDA Graph很可能是你的第一优化选择。
         </div>
 
-        <h3>图更新与重捕获（CUDA 13.3新特性）</h3>
+        <h2>图更新与重捕获（CUDA 13.3新特性）</h2>
 
         <p>传统的CUDA Graph有一个局限性：一旦实例化，图的结构就固定了。如果你需要更改某个kernel的参数（比如动态batch size导致grid dim变化），你必须重新捕获整个图并重新实例化。这在很多动态场景下是不可接受的。</p>
 
@@ -230,7 +497,7 @@ cudaGraphLaunch(graphExec, stream);</code></pre>
 
         <p>这个特性的意义在于：它让CUDA Graph真正适用于动态的生产环境——batch size动态变化、输入尺寸不定、条件分支等场景终于也可以享受Graph的低开销收益了。</p>
 
-        <h3>CUDA Graph适用场景与限制</h3>
+        <h2>CUDA Graph适用场景与限制</h2>
 
         <p>讲了这么多好处，那CUDA Graph是不是万能药呢？当然不是。让我帮你梳理一下，什么时候该用，什么时候不该用。</p>
 
@@ -257,13 +524,23 @@ cudaGraphLaunch(graphExec, stream);</code></pre>
 
         <p>好了，CUDA Graph的内容就到这里。下一章，我们要跨越单张GPU的边界，进入<strong>多GPU编程</strong>的世界——当一张H100不够用的时候，你如何让8张、甚至64张GPU协同工作？我们会在第20章深入讨论NVLink、NCCL和多GPU编程模式。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——CUDA Graphs（Stream Capture、<code>cudaGraphInstantiate</code>、<code>cudaGraphLaunch</code>）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>CUDA Runtime API——Graph 相关条目与 <code>cudaStreamBeginRecaptureToGraph</code>：<a href="https://docs.nvidia.com/cuda/cuda-runtime-api/">docs.nvidia.com/cuda/cuda-runtime-api</a>。</li>
+          <li>文中 5–15 µs launch 延迟、500 µs 推理、40%/5% 提升与 35→21 ms 等数字来自一次具体项目，属教学示意，随硬件与版本而异。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="18.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="20.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
