@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第23章 Nsight工具深度实战</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,16 +233,20 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>Nsight工具深度实战</h1>
+          <p class="dek">会用工具和会用工具找到真瓶颈，中间隔着巨大的鸿沟。本章把 NVTX 标注、Nsight Compute 关键指标、VSE 调试与 Python 工具串成一条“从数据到决策”的实战流程。</p>
+        </header>
 
-        <h2>Nsight工具深度实战</h2>
 
         <p>大家好，我是你们的讲师。如果你从第一章一路跟到了这里，你应该已经会写CUDA内核、会用基本的profiling工具、也了解了一些常见的优化手法。但说实话——知道一个工具叫什么名字和能在实战中用这个工具找到真正的性能瓶颈，中间隔着巨大的鸿沟。这一章，我们就要跨越这道鸿沟。</p>
 
         <p>前几章我们介绍过 <code>nvprof</code> 和 Nsight Systems 的基础用法。但那只是冰山一角。真正的profiling高手可以在一个看上去"正常"的时间线里发现深藏的串行化问题；能从NVIDIA Nsight Compute报告中的几百个指标里，一眼锁定那个"真正"的瓶颈；会用 Nsight Visual Studio Edition 一步步走SASS指令，观察每个warp的状态。这些技能不是在文档里翻翻就能学会的——它们来自大量实战经验和系统性思考。让我们开始吧。</p>
 
-        <h3>Nsight Systems高级功能</h3>
+        <h2>Nsight Systems高级功能</h2>
 
         <p>大多数开发者用Nsight Systems的方式是：录一段trace，看一眼CPU和GPU的时间线，找到最长的那个gap，然后结束。但当你面对一个复杂的多流、多进程CUDA应用时，这种"看一眼"的方法就不够用了。你需要NVTX这个神器。</p>
 
@@ -80,7 +276,7 @@ void process_batch(const float* input, float* output, int batch_size) {
             <strong>进阶技巧：</strong> 在多进程场景中（比如分布式训练），可以为每个进程设置不同的NVTX颜色域。这样在Nsight Systems的时间线中，你一眼就能区分不同进程的活动。方法很简单——在初始化时调用 <code>nvtxNameOsThread()</code> 给每个线程命名，或者通过 <code>nvtxDomainCreate()</code> 创建独立的域。
         </div>
 
-        <h3>Nsight Compute高级指标</h3>
+        <h2>Nsight Compute高级指标</h2>
 
         <p>如果说Nsight Systems是"广角镜"，让你看到整个应用的宏观时间线，那么Nsight Compute就是"显微镜"，让你看到单个内核内部的微观行为。但Nsight Compute的报告有上百个指标，绝大多数开发者只盯着 <code>Duration</code> 和 <code>Occupancy</code> 看——这就像医生只看病人的体温和心率就下诊断，显然不够。</p>
 
@@ -151,7 +347,7 @@ void process_batch(const float* input, float* output, int batch_size) {
 
         <p>解读这些指标需要经验，但有一个简单的口诀："先看带宽，再看停顿，最后看发射。" 如果你把GPU想象成一个工厂流水线：带宽决定了原料能运多快（memory bound），停顿率告诉你有多少工人在等原料（warp stall），指令发射率则反映了工人干活的速度（compute bound）。从这三个维度入手，基本不会错判。</p>
 
-        <h3>Nsight Visual Studio Edition调试实战</h3>
+        <h2>Nsight Visual Studio Edition调试实战</h2>
 
         <p>写CUDA代码最让人头疼的事情之一就是"调试"。你在CPU上习惯的那一套——断点、单步、变量监视——在GPU上都不直接可用。好消息是，Nsight Visual Studio Edition（VSE）把这一切都带到了GPU上。</p>
 
@@ -175,7 +371,7 @@ void process_batch(const float* input, float* output, int batch_size) {
             <strong>提醒：</strong> VSE的GPU调试会占用大量资源。调试时CUDA内核的执行速度可能比正常慢100倍以上，因为调试器需要暂停所有活跃的warp来检查状态。建议的做法是：先用 <code>printf</code> 和 <code>compute-sanitizer</code> 做初步诊断，只有在这些方法无法定位时才启用VSE的全量GPU调试。
         </div>
 
-        <h3>Nsight Python工具</h3>
+        <h2>Nsight Python工具</h2>
 
         <p>2026年的今天，大量CUDA代码实际上是Python开发者通过PyTorch、JAX或者Numba写的。如果你是这种情况，别担心——NVIDIA的工具链条已经很好地覆盖了Python生态。<strong>Nsight Systems for Python</strong> 可以直接profiling Python CUDA应用，自动识别以下内容：</p>
 
@@ -193,7 +389,7 @@ void process_batch(const float* input, float* output, int batch_size) {
             <strong>实战建议：</strong> 如果你主要用PyTorch做深度学习，我强烈建议你在训练脚本的开头和结尾加上 <code>torch.cuda.cudart().cudaProfilerStart()</code> 和 <code>cudaProfilerStop()</code>，这样Nsight只会profiling你关心的那段代码，而不是包括导入库时的无关开销。配合NVTX的Python绑定 <code>torch.cuda.nvtx.range_push()</code>，你甚至可以精确标注"前向"、"损失计算"、"反向"等各个阶段。
         </div>
 
-        <h3>性能报告解读——从数据到决策</h3>
+        <h2>性能报告解读——从数据到决策</h2>
 
         <p>Nsight Compute生成的性能报告内容丰富，但也容易让人眼花缭乱。让我分享一个系统化的解读流程：</p>
 
@@ -205,13 +401,86 @@ void process_batch(const float* input, float* output, int batch_size) {
 
         <p>让我给你讲一个真实的例子。去年我在分析一个NLP模型的训练性能时，Nsight Systems显示GPU利用率接近100%，按说已经没有优化空间了。但我注意到一个奇怪的现象：GPU kernel的持续时间呈"锯齿状"——忽长忽短。加上NVTX标注后，真相浮出水面：每次GPU kernel执行前，都有一段长达几十毫秒的CPU预处理（数据tokenization和padding），这段时间GPU完全空闲，但因为NVTX没有标注，我一直以为GPU在忙。进一步分析发现，所谓的"GPU时间"中，有<strong>超过70%实际上是CPU在做数据预处理</strong>，GPU只是短暂被唤醒执行计算后又进入空闲。解决方案不在优化kernel，而在于将数据预处理做成异步pipeline，用CUDA Stream和 <code>cudaMemcpyAsync</code> 让CPU预处理和GPU计算重叠起来。这一优化让端到端训练时间减少了40%。所以记住：<strong>"GPU忙"不等于"GPU在算有用的东西"</strong>——Nsight Systems + NVTX是识别这类伪装瓶颈的利器。</p>
 
-        <div class="tip">
-            <strong>一个小口诀：</strong>"看roofline知类型，看SOL知健康，看counter知热点，看NVTX知真相。" 四步走完，你基本上不会再被profiling结果迷惑。
+        <figure>
+<svg role="img" aria-labelledby="fig-nvtx-title fig-nvtx-desc" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-nvtx-title">“GPU 很忙”其实是 CPU 预处理在占时间</title>
+<desc id="fig-nvtx-desc">上方是 CPU 预处理占据大部分时间，下方 GPU 只在预处理之后短暂计算，端到端时间主要由 CPU 决定。</desc>
+<text x="16" y="54" font-size="12.5" fill="#334155">CPU 侧（数据 tokenization / padding）</text>
+<line x1="70" y1="64" x2="660" y2="64" stroke="#cbd5e1" stroke-width="1.4"/>
+<rect x="90" y="72" width="118" height="26" rx="4" fill="#fecaca" stroke="#dc2626"/>
+<rect x="214" y="72" width="118" height="26" rx="4" fill="#fecaca" stroke="#dc2626"/>
+<rect x="338" y="72" width="118" height="26" rx="4" fill="#fecaca" stroke="#dc2626"/>
+<rect x="462" y="72" width="118" height="26" rx="4" fill="#fecaca" stroke="#dc2626"/>
+<text x="90" y="112" font-size="11.5" fill="#b91c1c">四段预处理，占端到端时间的大头</text>
+<text x="16" y="158" font-size="12.5" fill="#334155">GPU 侧（实际计算）</text>
+<line x1="70" y1="168" x2="660" y2="168" stroke="#cbd5e1" stroke-width="1.4"/>
+<rect x="208" y="176" width="30" height="26" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="332" y="176" width="30" height="26" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<rect x="456" y="176" width="30" height="26" rx="4" fill="#93c5fd" stroke="#2563eb"/>
+<text x="244" y="214" font-size="11.5" fill="#1d4ed8">GPU 只在预处理后短暂迸发，其余时间空闲</text>
+<line x1="90" y1="240" x2="580" y2="240" stroke="#94a3b8" stroke-width="1.4"/>
+<line x1="90" y1="234" x2="90" y2="246" stroke="#94a3b8" stroke-width="1.4"/>
+<line x1="580" y1="234" x2="580" y2="246" stroke="#94a3b8" stroke-width="1.4"/>
+<text x="335" y="262" font-size="12" text-anchor="middle" fill="#475569">端到端时间（此处 >70% 花在 CPU 预处理）</text>
+</svg>
+<figcaption>不加重 NVTX 标注时，看到“GPU 占用率很高”很容易误以为计算是瓶颈。叠加 NVTX 后真相显现：每步计算前都有一段漫长的 CPU 预处理，GPU 只是短暂被唤醒又空闲。“GPU 忙”不等于“GPU 在算有用的东西”——这正是 NVTX 这类标注要暴露的伪瓶颈。</figcaption>
+</figure>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="有效 GPU 利用率公式，可横向滚动">
+        <math display="block" aria-label="有效 GPU 利用率等于 GPU 真正计算时间除以端到端时间">
+<mrow><msub><mtext>利用率</mtext><mtext>GPU</mtext></msub><mo>=</mo><mfrac><msub><mi>T</mi><mtext>计算</mtext></msub><msub><mi>T</mi><mtext>端到端</mtext></msub></mfrac></mrow>
+</math>
         </div>
 
-        <h3>下章预告：踩坑集锦与调试案例</h3>
+        <div class="tip">
+            <strong>一个小口诀：</strong>“看roofline知类型，看SOL知健康，看counter知热点，看NVTX知真相。” 四步走完，你基本上不会再被profiling结果迷惑。
+        </div>
+
+        <div class="widget">
+<h3>交互：把预处理和计算重叠起来能省多少？</h3>
+<p>设每步 CPU 预处理 t_cpu、GPU 计算 t_gpu（<strong>教学示意</strong>：理想流水线，忽略启动与传输开销）。串行总时间 = n(t_cpu+t_gpu)，重叠后 ≈ t_cpu + n·max(t_cpu,t_gpu)。</p>
+<div class="control-row">
+  <label>CPU 预处理 t_cpu (ms) <input type="range" id="np-c" min="1" max="60" value="40"><span class="readout" id="np-cv">40</span></label>
+  <label>GPU 计算 t_gpu (ms) <input type="range" id="np-g" min="1" max="60" value="10"><span class="readout" id="np-gv">10</span></label>
+  <label>步数 n <input type="range" id="np-n" min="1" max="20" value="10"><span class="readout" id="np-nv">10</span></label>
+  <button type="button" id="np-demo">交换预处理/计算</button>
+</div>
+<div class="readout" id="np-out">—</div>
+<p class="readout" id="np-note"></p>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('np-c'), g=document.getElementById('np-g'), n=document.getElementById('np-n');
+  function upd(){
+    var C=+c.value, G=+g.value, N=+n.value;
+    var ser=N*(C+G), ov=C+N*Math.max(C,G), sp=ser/ov;
+    document.getElementById('np-cv').textContent=C;
+    document.getElementById('np-gv').textContent=G;
+    document.getElementById('np-nv').textContent=N;
+    document.getElementById('np-out').innerHTML='串行 <b>'+ser+' ms</b> → 重叠 <b>'+ov+' ms</b>，加速 <b>'+sp.toFixed(2)+'×</b>';
+    document.getElementById('np-note').textContent=(C>G)
+      ? '预处理更重：重叠后时间由 CPU 预处理决定，优化该从预处理下手。'
+      : '计算更重：重叠后时间由 GPU 计算决定，优化重心在 kernel。';
+  }
+  [c,g,n].forEach(function(e){e.addEventListener('input',upd);});
+  document.getElementById('np-demo').addEventListener('click',function(){ var t=+c.value; c.value=+g.value; g.value=t; upd(); });
+  upd();
+})();
+</script>
+
+        <h2>下章预告：踩坑集锦与调试案例</h2>
 
         <p>这一章我们学了profiling工具的高级用法——如何从Nsight Compute的几百个指标中找到真正的瓶颈，如何用NVTX给时间线"上色"，以及如何用VSE调试CUDA内核。但说实话，工具用得再熟，不如亲眼看到真实的bug长什么样。下一章，我会给你分享五个真实案例——从非合并访问的性能灾难到 <code>__syncthreads()</code> 死锁——每一个案例背后都有一段"血泪史"。你会发现，很多坑前人已经踩过了，而学习这些经验，能帮你省下数周的调试时间。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>Nsight Systems 用户指南（NVTX、OS runtime tracing）：<a href="https://docs.nvidia.com/nsight-systems/">docs.nvidia.com/nsight-systems</a>。</li>
+          <li>Nsight Compute 用户指南（Roofline、Speed Of Light、Source Counters 与各指标）：<a href="https://docs.nvidia.com/nsight-compute/">docs.nvidia.com/nsight-compute</a>。</li>
+          <li>NVTX 与 Profiler 用户指南：<a href="https://docs.nvidia.com/cuda/profiler-users-guide/">docs.nvidia.com/cuda/profiler-users-guide</a>。文中“70%”与“端到端减少 40%”来自一次具体项目，属教学示意。</li>
+        </ul>
+      </section>
+      </article>
 
         <div class="footer-nav">
             <a href="22.html">← 上一章</a>
@@ -219,7 +488,7 @@ void process_batch(const float* input, float* output, int batch_size) {
             <a href="24.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
