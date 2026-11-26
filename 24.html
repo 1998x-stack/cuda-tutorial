@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第24章 踩坑集锦与调试案例</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,16 +233,19 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>踩坑集锦与调试案例</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>踩坑集锦与调试案例</h1>
+          <p class="dek">GPU 上的 bug 往往诡异：偶发的、换卡就好的、加了 printf 就正常的。这一章把五个最典型的踩坑案例拆成“症状 → 诊断 → 修复 → 教训”四步，给出可复用的诊断路径。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。有句话说得好：<strong>读别人的bug报告，比自己踩坑快十倍</strong>。在CUDA编程中尤其如此——因为GPU上的bug往往非常诡异：有时候是"偶尔出现"的随机错误，有时候是"换个显卡就消失"的环境差异，有时候是"不加printf就正常"的Heisenbug。写CUDA代码这么久，我可以肯定地告诉你：每一个CUDA开发者都有一份"血泪史"。</p>
 
         <p>这一章，我整理了五个最典型、最隐蔽、也最有教育意义的CUDA踩坑案例。每个案例都包含症状、诊断过程和解决方案。读完之后你会惊讶地发现：这些bug很多在知情人看来"一目了然"，但在当时的场景下，每个坑都卡了开发者好几天甚至好几周。这些经验，就是你的防弹衣。</p>
 
-        <h3>案例1——非合并访问性能灾难</h3>
+        <h2>案例1——非合并访问性能灾难</h2>
 
         <p><strong>症状：</strong> 一个看起来"很简单"的向量操作内核，实际带宽利用率只有理论峰值的3%。代码逻辑完全正确，但速度慢得无法接受。从9999个可能的优化中，到底哪个才是罪魁祸首？</p>
 
@@ -74,6 +269,40 @@ __global__ void update_position(Particle* particles, int n) {
 }</code></pre>
 
         <p>问题的根源在于：warp中的32个线程顺序访问 <code>particles[0].x, particles[1].x, ...</code>，但它们在内存中的布局是 <code>[x0, y0, z0, vx0, vy0, vz0, m0, x1, y1, ...]</code>。当thread 0访问 <code>x0</code> 时，硬件会加载包含 <code>x0</code> 的整个cache line（128字节），但这个cache line里只有 <code>x0</code> 是有用的，其余都是同一结构体的其他字段——这就是"非合并访问"。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-aos-title fig-aos-desc" viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-aos-title">AoS 非合并访问与 SoA 合并访问的显存布局对比</title>
+<desc id="fig-aos-desc">AoS 把每个结构体的多个字段交错存放，warp 只取其中一个字段时会跨过大量无用字节，浪费带宽；SoA 把同一字段连续存放，warp 的 32 个线程读到的是一段连续地址，访存被合并。</desc>
+<text x="20" y="26" font-size="12.5" fill="#0f172a">AoS（Array of Structs）：字段交错</text>
+<g font-size="10">
+<rect x="20" y="36" width="48" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="44" y="53" text-anchor="middle">x0</text>
+<rect x="68" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="92" y="53" text-anchor="middle">y0</text>
+<rect x="116" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="140" y="53" text-anchor="middle">z0</text>
+<rect x="164" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="188" y="53" text-anchor="middle">vx0</text>
+<rect x="212" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="236" y="53" text-anchor="middle">…</text>
+<rect x="260" y="36" width="48" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="284" y="53" text-anchor="middle">x1</text>
+<rect x="308" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="332" y="53" text-anchor="middle">y1</text>
+<rect x="356" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="380" y="53" text-anchor="middle">z1</text>
+<rect x="404" y="36" width="48" height="26" fill="#e2e8f0" stroke="#94a3b8"/><text x="428" y="53" text-anchor="middle">…</text>
+<rect x="452" y="36" width="48" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="476" y="53" text-anchor="middle">x2</text>
+</g>
+<line x1="20" y1="72" x2="500" y2="72" stroke="#dc2626" stroke-width="1.4"/>
+<text x="510" y="76" font-size="10.5" fill="#b91c1c">绿格才是有用数据，利用率≈1/8</text>
+<text x="20" y="128" font-size="12.5" fill="#0f172a">SoA（Struct of Arrays）：同一字段连续</text>
+<g font-size="10">
+<rect x="20" y="138" width="60" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="50" y="155" text-anchor="middle">x0</text>
+<rect x="80" y="138" width="60" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="110" y="155" text-anchor="middle">x1</text>
+<rect x="140" y="138" width="60" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="170" y="155" text-anchor="middle">x2</text>
+<rect x="200" y="138" width="60" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="230" y="155" text-anchor="middle">x3</text>
+<rect x="260" y="138" width="60" height="26" fill="#bbf7d0" stroke="#16a34a"/><text x="290" y="155" text-anchor="middle">…</text>
+</g>
+<line x1="20" y1="174" x2="320" y2="174" stroke="#16a34a" stroke-width="1.4"/>
+<text x="330" y="178" font-size="10.5" fill="#15803d">整条 cache line 都是有用数据，访存被合并</text>
+<text x="20" y="220" font-size="11.5" fill="#475569">结论：决定合并与否的不是“读了多少个值”，而是 warp 内 32 个线程访问的地址是否连续。</text>
+</svg>
+<figcaption>同一个 <code>particles[i].x</code> 语句，在 AoS 下变成跨 stride 的稀疏取样，一个 cache line 里只有极少数字节被用到；在 SoA 下则退化为连续地址的合并访问。案例 1 中“利用率 12.5%”正是 AoS 布局的直接后果，改成 SoA 后带宽利用率回到 82%。</figcaption>
+</figure>
 
         <p><strong>修复方案：</strong> 转换为SoA（Struct of Arrays）布局，并适当padding对齐：</p>
 
@@ -101,7 +330,7 @@ __global__ void update_position_soa(float* x, float* vx, int n, float dt) {
             <strong>关键教训：</strong> 如果数据在显存中的排列方式和线程的访问方式不匹配，再多花哨的优化技巧也救不了你。在写任何CUDA内核之前，先问自己一个问题："warp中的32个线程，它们访问的内存地址是连续的吗？" 如果答案是"否"，优先想办法改成连续的，再考虑其他优化。
         </div>
 
-        <h3>案例2——Bank Conflict死锁</h3>
+        <h2>案例2——Bank Conflict死锁</h2>
 
         <p><strong>症状：</strong> 一个使用了共享内存的内核，执行时间在不同运行之间波动极大——有时候20微秒，有时候200微秒。同一个内核，同一份数据，只是每次运行时间不同。更让人困惑的是，这种波动没有任何规律可循。</p>
 
@@ -119,6 +348,44 @@ float val = shared[threadIdx.x][threadIdx.y];  // 行访问！
 
         <p>问题的根源是：共享内存有32个bank，相邻的32位字映射到相邻的bank。当warp中多个线程访问同一bank的不同地址时，bank conflict就发生了。在 <code>shared[threadIdx.x][threadIdx.y]</code> 这个模式中，<code>threadIdx.x</code> 每增加1，偏移量增加 <code>32 * sizeof(float) = 128字节</code>，而bank stride是 <code>128 / 4 = 32</code>，所以 <code>32 % 32 = 0</code>——所有线程都访问同一个bank！</p>
 
+        <p>把 bank 冲突写成公式就更清楚了：共享内存中每个 32 位字按地址映射到 32 个 bank 之一，</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="共享内存 bank 映射公式，可横向滚动">
+        <math display="block" aria-label="bank 编号等于地址除以四向下取整后，对三十二取模">
+<mrow><mtext>bank</mtext><mo>=</mo><mrow><mo>(</mo><mfrac><mtext>addr</mtext><mn>4</mn></mfrac><mo>)</mo><mo>mod</mo><mn>32</mn></mrow></mrow>
+</math>
+        </div>
+
+        <p>由于地址是 <code>addr = t·N·4</code>，代进去就得到 <code>bank = (t·N) mod 32</code>。于是冲突重数恰好是 <code>gcd(N, 32)</code>：当行宽 <code>N</code> 是 32 的倍数时 <code>gcd</code> 最大，固定某列向下访问的线程会全部落到同一个 bank；把宽度 padding 成 33（与 32 互质）就能让线程散开。注意图中显示的 4 路冲突只是该访问模式下的一次采样。</p>
+
+        <div class="widget">
+<h3>交互：行宽度与 bank 冲突重数</h3>
+<p>按列访问 <code>shared[t][0]</code> 时，观察不同行宽 <code>N</code> 下 32 个线程的 bank 分布（<strong>教学示意</strong>：理想化模型，忽略半 warp 与双精度等细节）。</p>
+<div class="control-row">
+  <label>行宽度 N <input type="range" id="bc-n" min="31" max="48" value="32"><span class="readout" id="bc-nv">32</span></label>
+  <button type="button" id="bc-pad">应用 padding N=33</button>
+</div>
+<div class="readout" id="bc-out">—</div>
+<p class="readout" id="bc-note"></p>
+</div>
+<script>
+(function(){
+  var n=document.getElementById('bc-n');
+  function gcd(a,b){return b?gcd(b,a%b):a;}
+  function upd(){
+    var N=+n.value, g=gcd(N,32);
+    document.getElementById('bc-nv').textContent=N;
+    document.getElementById('bc-out').innerHTML='使用到的不同 bank 数 <b>'+(32/g)+'</b> / 32　·　冲突重数 <b>'+g+'×</b>';
+    document.getElementById('bc-note').textContent=(g===1)
+      ? 'N 与 32 互质：32 个线程散开到 32 个 bank，无冲突。'
+      : 'gcd(N,32)='+g+'：线程挤在 '+(32/g)+' 个 bank 上，访问被序列化成 '+g+' 次。';
+  }
+  n.addEventListener('input',upd);
+  document.getElementById('bc-pad').addEventListener('click',function(){n.value=33;upd();});
+  upd();
+})();
+</script>
+
         <p><strong>修复方案：</strong> 在第二维上padding一个元素：</p>
 
         <pre><code>// 修复：加一个元素的padding打破bank冲突模式
@@ -134,7 +401,7 @@ float val = shared[threadIdx.x][threadIdx.y];  // 现在不同行的偏移量差
             <strong>小技巧：</strong> 在共享内存声明时，养成在最后一维多加几个元素的习惯。比如 <code>__shared__ float data[M][N+P]</code> 中P取1-3即可。这几乎不会增加共享内存使用量，但能有效避免 <code>N % 32 == 0</code> 时的完美striding冲突。
         </div>
 
-        <h3>案例3——默认流悄悄串行化</h3>
+        <h2>案例3——默认流悄悄串行化</h2>
 
         <p><strong>症状：</strong> 写了两个独立的内核，分别放在两个不同的CUDA流中执行，期望它们能重叠运行（overlap），达到2倍的吞吐提升。实际测量发现：总耗时基本和单流一样——重叠完全没有发生。</p>
 
@@ -171,7 +438,7 @@ kernel_b&lt;&lt;&lt;grid, block, 0, s2&gt;&gt;&gt;(d_b, N);
             <strong>血的教训：</strong> 很多CUDA开发者（包括我）都踩过默认流的坑。默认流是一个"隐形的同步点"——你甚至可能没意识到它在那里。最佳实践是：一旦开始使用CUDA Stream，就<strong>不要使用任何默认流上的操作</strong>。所有 <code>cudaMemcpy</code> 都改用 <code>cudaMemcpyAsync</code>，所有内核launch都指定流参数。如果你想让程序更安全，可以用 <code>cudaStreamCreateWithFlags</code> 创建非阻塞流。
         </div>
 
-        <h3>案例4——未初始化内存的NaN传播</h3>
+        <h2>案例4——未初始化内存的NaN传播</h2>
 
         <p><strong>症状：</strong> 一个看起来完全正确的图像处理内核，在特定输入尺寸下输出中出现随机的NaN（Not a Number）。换了输入数据位置不同，重启程序后有时消失，有时出现在不同的像素位置。典型的"幽灵bug"。</p>
 
@@ -221,7 +488,7 @@ __global__ void process_pixel_kernel(float* output, int width, int height) {
             <strong>习惯养成：</strong> 在自己的开发流程中加入"在任何 <code>compute-sanitizer</code> 检查通过之前，绝不认为kernel是正确的"这条纪律。这个简单的习惯可以帮助你在未来省下无数debug时间。
         </div>
 
-        <h3>案例5——条件__syncthreads()死锁</h3>
+        <h2>案例5——条件__syncthreads()死锁</h2>
 
         <p><strong>症状：</strong> 一个在block大小为128时完美运行的kernel，当block大小改为256时，程序卡死了。没有任何错误信息，没有任何crash——就是hang住不动。更诡异的是，减少block大小到64也正常，就256出问题。</p>
 
@@ -278,10 +545,11 @@ __syncthreads();  // 然后继续...（也不对！已经return的线程不会�
 
         <p><strong>效果：</strong> 修复后，所有block大小都能正常运行。最关键的经验是：<strong>永远不要在条件分支内使用 <code>__syncthreads()</code></strong>，除非你能100%保证同一个warp中的所有线程都会进入同一个分支。</p>
 
-        <h3>调试方法论总结</h3>
+        <h2>调试方法论总结</h2>
 
         <p>上面五个案例各有不同，但它们的诊断过程遵循了一个共同的模式。我把它总结成了一张速查表，贴在你的工位旁会很有用：</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="CUDA 调试症状与工具速查表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -330,6 +598,7 @@ __syncthreads();  // 然后继续...（也不对！已经return的线程不会�
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <div class="tip">
             <strong>调试心法：</strong> 面对一个奇怪的CUDA bug时，不要直接扎进代码细节。先问自己三个问题：(1) 这个bug是确定性的还是随机性的？(2) 改变数据规模或block大小时bug会消失吗？(3) 在CPU上能复现吗？这三个问题的答案能帮你缩小80%的排查范围。
@@ -337,9 +606,19 @@ __syncthreads();  // 然后继续...（也不对！已经return的线程不会�
 
         <p>顺便说一句，我在初学CUDA时犯过一个特别蠢的错误——把 <code>&lt;&lt;&lt;grid, block&gt;&gt;&gt;</code> 中的grid和block参数写反了。结果kernel运行倒是运行了，但只覆盖了数据的一小部分。我花了整整一天用Nsight Compute看各种指标，试图理解"为什么这个kernel只改了一点点数据"——直到另一个同事扫了一眼代码说："哥们，你的grid和block写反了。" 所以有时候，最简单的错误藏得最深。<strong>写CUDA代码时，每敲一个 <code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 都下意识地确认一下grid和block的顺序</strong>——这个习惯能救你无数次。</p>
 
-        <h3>下章预告：性能调优实战</h3>
+        <h2>下章预告：性能调优实战</h2>
 
         <p>这一章我们看了五个真实bug的详细诊断过程——从非合并访问到 <code>__syncthreads()</code> 死锁。读别人的踩坑经验是最快的成长方式，但光说不练不行。下一章，我们要实战了——选两个最经典的CUDA算法（并行规约和矩阵乘法），从最naive的实现开始，一步步优化到极致。你会看到每一步优化到底带来了多少倍的加速，以及更重要的是：<strong>什么时候应该停止优化</strong>。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>compute-sanitizer 用户手册（memcheck / racecheck / initcheck 工具）：<a href="https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html">docs.nvidia.com/compute-sanitizer</a>。</li>
+          <li>CUDA C++ Best Practices Guide（合并访问、共享内存 bank、异步执行与流）：<a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/">docs.nvidia.com/cuda/cuda-c-best-practices-guide</a>。</li>
+          <li>本章五个案例的性能数字（3%→82%、27倍、稳定 21µs、48%、g=gcd(N,32)）均为案例叙述的教学示意，用于说明诊断思路，非标准化基准测试结果。</li>
+        </ul>
+      </section>
+      </article>
 
         <div class="footer-nav">
             <a href="23.html">← 上一章</a>
@@ -347,7 +626,7 @@ __syncthreads();  // 然后继续...（也不对！已经return的线程不会�
             <a href="25.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
