@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第2章 CUDA编程环境搭建</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,16 +233,19 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>CUDA编程环境搭建</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>CUDA编程环境搭建</h1>
+          <p class="dek">CUDA 环境要同时与驱动、Toolkit、编译器、链接器四个层面打交道，任何一层版本对不上都会“装好了却跑不通”。这一章把安装、工具链、验证与排查串成一条可复现的路径。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。如果你在一台新机器上搭建过深度学习环境，你一定知道那种"装了半天最后跑不起来"的痛苦。CUDA开发环境比那还要敏感一点——因为你要同时跟驱动、Toolkit、编译器、链接器四个层面打交道。任何一个环节版本不匹配，都会导致"明明装好了，但就是跑不通"的尴尬局面。</p>
 
         <p>这一章，我会带你从头到尾搭好一个干净、可工作的CUDA开发环境。不管你用Windows、Linux还是macOS，我都会给出对应的方案。你不只是在"安装软件"——你是在为自己的GPU计算之旅打好地基。地基稳了，后面几十章才能走得顺畅。</p>
 
-        <h3>CUDA Toolkit安装</h3>
+        <h2>CUDA Toolkit安装</h2>
 
         <p>首先，需要搞清楚两个概念：<strong>NVIDIA驱动</strong>和<strong>CUDA Toolkit</strong>不是一回事。驱动让你的操作系统"认识"GPU，而Toolkit里面装着编译器（nvcc）、CUDA库、头文件和开发工具。好消息是：如果你装的是最新的NVIDIA驱动，它已经内置了runtime库，足够运行已经编译好的CUDA程序。但你要自己写代码、编译，就必须再装Toolkit。</p>
 
@@ -64,6 +259,7 @@ nvcc --version</code></pre>
 
         <p>这两个命令输出中各自有一个CUDA版本号——注意，它们可能不一样！<code>nvidia-smi</code> 显示的是驱动支持的<strong>最高</strong>CUDA版本，而 <code>nvcc --version</code> 才是你实际安装的Toolkit版本。只要Toolkit版本 <strong>不高于</strong> 驱动支持的最高版本，就能正常工作。</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="各操作系统 CUDA 安装方式对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -100,14 +296,44 @@ nvcc --version</code></pre>
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <div class="tip">
             <strong>推荐做法：</strong> 在Linux上，我推荐用runfile安装。它给你最大的控制权——你可以选择安装路径，可以管理多版本CUDA共存，卸载的时候也干净。deb包会把驱动和Toolkit绑定在一起，后续升级容易出问题。
         </div>
 
-        <h3>开发工具链概览</h3>
+        <h2>开发工具链概览</h2>
 
         <p>CUDA的工具链和常规C/C++开发类似，但多了一个关键环节——<strong>nvcc编译器</strong>。nvcc是你的主要编译工具：它负责把 <code>.cu</code> 文件编译成GPU可执行的代码。它的工作流程大致是：首先将 <code>.cu</code> 文件拆分成GPU代码和CPU代码两部分，GPU代码编译成PTX（并行线程执行，一种中间指令集），CPU代码交给宿主的C++编译器（gcc/clang/MSVC）处理。最后再把两部分链接到一起。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-nvcc-title fig-nvcc-desc" viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-nvcc-title">nvcc 的编译流程：一份 .cu 被拆成设备代码与主机代码</title>
+<desc id="fig-nvcc-desc">nvcc 先把 .cu 拆开：设备代码编译成 PTX 与 cubin/SASS，主机代码交给宿主 C++ 编译器，最后链接成可执行文件，由驱动在运行时把 SASS 加载到 GPU。</desc>
+<defs><marker id="nvcc-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#64748b"/></marker></defs>
+<rect x="20" y="100" width="96" height="46" rx="8" fill="#e0f2fe" stroke="#2563eb"/>
+<text x="68" y="120" font-size="12" text-anchor="middle" fill="#0f172a">.cu 源文件</text>
+<text x="68" y="136" font-size="10.5" text-anchor="middle" fill="#475569">主机+设备混合</text>
+<line x1="116" y1="123" x2="176" y2="123" stroke="#64748b" stroke-width="1.6" marker-end="url(#nvcc-arrow)"/>
+<rect x="178" y="100" width="86" height="46" rx="8" fill="#f5d44a" stroke="#b8860b"/>
+<text x="221" y="122" font-size="12" text-anchor="middle" fill="#0f172a">nvcc 拆分</text>
+<text x="221" y="138" font-size="10.5" text-anchor="middle" fill="#475569">前端</text>
+<line x1="264" y1="112" x2="316" y2="66" stroke="#64748b" stroke-width="1.6" marker-end="url(#nvcc-arrow)"/>
+<line x1="264" y1="134" x2="316" y2="180" stroke="#64748b" stroke-width="1.6" marker-end="url(#nvcc-arrow)"/>
+<rect x="318" y="42" width="180" height="52" rx="8" fill="#dcfce7" stroke="#16a34a"/>
+<text x="408" y="62" font-size="11.5" text-anchor="middle" fill="#0f172a">设备代码 → PTX</text>
+<text x="408" y="79" font-size="10.5" text-anchor="middle" fill="#475569">→ cubin (SASS)</text>
+<rect x="318" y="158" width="180" height="52" rx="8" fill="#fee2e2" stroke="#dc2626"/>
+<text x="408" y="178" font-size="11.5" text-anchor="middle" fill="#0f172a">主机代码 → gcc/clang</text>
+<text x="408" y="195" font-size="10.5" text-anchor="middle" fill="#475569">→ 目标文件 .o</text>
+<line x1="498" y1="68" x2="548" y2="112" stroke="#64748b" stroke-width="1.6" marker-end="url(#nvcc-arrow)"/>
+<line x1="498" y1="184" x2="548" y2="140" stroke="#64748b" stroke-width="1.6" marker-end="url(#nvcc-arrow)"/>
+<rect x="550" y="100" width="150" height="52" rx="8" fill="#f1f5f9" stroke="#475569"/>
+<text x="625" y="122" font-size="11.5" text-anchor="middle" fill="#0f172a">链接 → 可执行文件</text>
+<text x="625" y="139" font-size="10.5" text-anchor="middle" fill="#475569">驱动运行时加载 SASS</text>
+</svg>
+<figcaption>看懂这张图，就能理解为什么“编译通过”和“能跑”是两回事：nvcc 只负责产出 SASS，真正把它载入 GPU 的是驱动。当驱动支持的最高 CUDA 版本低于 Toolkit 生成的 PTX 版本时，驱动便无法识别设备，于是出现那句令人困惑的“No CUDA-capable device is detected”。</figcaption>
+</figure>
 
         <p>除了nvcc，还有几个值得一提的组件：</p>
 
@@ -155,7 +381,7 @@ target_link_libraries(hello_cuda PRIVATE cudart)</code></pre>
 
         <p>注意CMake从3.18版本开始原生支持CUDA作为一门语言（<code>LANGUAGES CUDA</code>），不需要再手动调用 <code>find_package(CUDA)</code> 了。这是一个很大的改进——你可以像管理C++代码一样管理CUDA代码。</p>
 
-        <h3>验证安装——设备查询程序</h3>
+        <h2>验证安装——设备查询程序</h2>
 
         <p>环境装没装好，跑一个完整的程序才知道。NVIDIA官方提供了一个叫 <code>deviceQuery</code> 的工具（在Toolkit的samples目录下），但其实我们完全可以自己写一个，既能验证环境，又能熟悉一下CUDA API：</p>
 
@@ -204,6 +430,7 @@ int main() {
 
         <p>输出中最重要的几个属性，解释如下：</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="GPU 设备属性及其重要性对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -240,8 +467,46 @@ int main() {
                 </tr>
             </tbody>
         </table>
+        </div>
 
-        <h3>常见安装坑与排查</h3>
+        <h2>理论显存带宽的算法</h2>
+
+        <p>上面代码里那行带宽计算并非随手写的——它背后的公式很值得记住，因为它决定了大多数 kernel 的性能天花板：</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="显存理论带宽公式，可横向滚动">
+        <math display="block" aria-label="带宽等于二乘以内存时钟频率，乘以总线宽度除以八，再除以十的六次方">
+<mrow><msub><mtext>BW</mtext><mtext>GB/s</mtext></msub><mo>=</mo><mfrac><mrow><mn>2</mn><mo>⋅</mo><msub><mi>f</mi><mtext>kHz</mtext></msub><mo>⋅</mo><mfrac><mi>W</mi><mn>8</mn></mfrac></mrow><msup><mn>10</mn><mn>6</mn></msup></mfrac></mrow>
+</math>
+        </div>
+
+        <p>其中 <code>f</code> 是内存时钟频率（kHz，<code>deviceQuery</code> 打印时需要除以 1000），<code>W</code> 是总线宽度（bit），常数 2 是因为显存是双向读写。这个值是<strong>理论上限</strong>，实测吞吐通常略低。</p>
+
+        <div class="widget">
+<h3>交互：用属性字段估算理论带宽</h3>
+<p>拖动滑块，按上式估算理论带宽（<strong>教学示意</strong>：仅由属性字段推算，不代表实测吞吐）。</p>
+<div class="control-row">
+  <label>内存数据率 f (MHz) <input type="range" id="bw-f" min="800" max="10000" step="1" value="9501"><span class="readout" id="bw-fv">9501</span></label>
+  <label>总线宽度 W (bit) <input type="range" id="bw-w" min="64" max="8192" step="64" value="384"><span class="readout" id="bw-wv">384</span></label>
+  <button type="button" id="bw-hbm">HBM3 预设（H100 规格）</button>
+</div>
+<div class="readout" id="bw-out">—</div>
+</div>
+<script>
+(function(){
+  var f=document.getElementById('bw-f'), w=document.getElementById('bw-w');
+  function upd(){
+    var F=+f.value, W=+w.value, bw=F*W/4000;
+    document.getElementById('bw-fv').textContent=F;
+    document.getElementById('bw-wv').textContent=W;
+    document.getElementById('bw-out').innerHTML='理论带宽 <b>'+bw.toFixed(0)+' GB/s</b>（约 '+(bw/1000).toFixed(2)+' TB/s）';
+  }
+  [f,w].forEach(function(e){e.addEventListener('input',upd);});
+  document.getElementById('bw-hbm').addEventListener('click',function(){f.value=2617;w.value=5120;upd();});
+  upd();
+})();
+</script>
+
+        <h2>常见安装坑与排查</h2>
 
         <p>说一个真实的故事。2021年一个朋友买了块RTX 3090，兴冲冲装好驱动，跑 <code>nvidia-smi</code> 正常识别。然后装CUDA 11.4 Toolkit，一切顺利。写了一个简单的"Hello GPU" kernel，编译通过。运行——"<strong>No CUDA-capable device is detected</strong>"。他当时整个人都懵了：刚买的显卡，难道坏了？折腾了三个小时，最后发现问题出在：<strong>驱动和Toolkit版本不匹配</strong>。他通过Ubuntu的apt自动装的是470系列驱动（支持CUDA 11.4），但他自己手动装了CUDA 12.0的Toolkit。驱动不认识12.0生成的PTX指令，直接说"没有CUDA设备"——其实设备好好的，是驱动和编译器之间"语言不通"。</p>
 
@@ -262,13 +527,22 @@ int main() {
 
         <p>好，到这一步你的环境应该已经就绪了。下一章，我们将深入GPU的内部——看看那些SM、warp、Tensor Core到底长什么样，它们是如何协同工作的。理解硬件架构，是写出高性能CUDA代码的第一步。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>CUDA 安装指南（各平台驱动/Toolkit 安装与版本对应）：<a href="https://docs.nvidia.com/cuda/cuda-installation-guide-linux/">docs.nvidia.com/cuda/cuda-installation-guide-linux</a>。</li>
+          <li>CUDA C++ Programming Guide 中的 <code>cudaDeviceProp</code> 与设备查询说明：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="01.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="03.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
