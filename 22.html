@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第22章 Cooperative Groups</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +233,14 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>Cooperative Groups</h1>
+          <p class="dek">线程层次（thread/block/grid）是硬件强加的，算法需要的却是逻辑分组。Cooperative Groups 让你在两者之间自由映射，并把同步与集体操作变成组对象上的方法。</p>
+        </header>
 
-        <h2>Cooperative Groups</h2>
 
         <p>大家好，我是你们的讲师。在传统CUDA编程模型中，我们只有三个层次的线程组织：<strong>thread → warp（隐式） → block → grid</strong>。block内部的线程可以用 <code>__syncthreads()</code> 同步，warp内部的线程自动同步，但warp之间、block之间的协作就非常困难了。Cooperative Groups（以下简称CG）就是为了打破这些刚性边界而生的——它让你可以定义任意大小的线程组，并在组内进行同步和集体操作。</p>
 
@@ -54,7 +250,7 @@
             <strong>核心思想：</strong> CUDA内置的线程层次（thread/block/grid）是硬件强加的，但<strong>算法需要的是逻辑分组</strong>。CG在这两者之间架起了一座桥——让你在算法的逻辑分组和硬件的物理分组之间灵活映射。
         </div>
 
-        <h3>Cooperative Groups核心概念</h3>
+        <h2>Cooperative Groups核心概念</h2>
 
         <p>Cooperative Groups API 定义在 <code>&lt;cooperative_groups.h&gt;</code> 头文件中，所有类型都在 <code>cooperative_groups</code>（简称 <code>cg</code>）命名空间下。基本用法非常直接——在kernel内部获取当前线程所属的group，然后在这个group上执行集体操作（如同步、归约等）。</p>
 
@@ -91,9 +287,37 @@ __global__ void cgBasicKernel(float *data, int n) {
 
         <p>看到没有，用CG后，你连 <code>__syncthreads()</code> 和 <code>__shfl()</code> 都不需要直接调用了——全部通过group对象上的方法完成。这种抽象的好处是：代码更具可读性，而且group类型可以根据需要动态变化。</p>
 
-        <h3>Block级别的Groups</h3>
+        <h2>Block级别的Groups</h2>
 
         <p>CG定义了几种不同类型的线程组，每种有不同的同步范围和能力：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-cg-title fig-cg-desc" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-cg-title">Cooperative Groups 的分组与同步范围</title>
+<desc id="fig-cg-desc">一个 grid 含多个 block；block 可切分为 tiled partition；同步范围从 warp tile、block 到整个 grid 逐级变大。</desc>
+<rect x="40" y="40" width="620" height="96" rx="12" fill="#f8fafc" stroke="#7461ba" stroke-width="1.6"/>
+<text x="52" y="62" font-size="12.5" fill="#5b21b6">grid_group —— 整个 grid 同步（需 cudaLaunchCooperativeKernel）</text>
+<rect x="70" y="76" width="180" height="46" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="160" y="104" font-size="12" text-anchor="middle" fill="#1e3a8a">block 0</text>
+<rect x="270" y="76" width="180" height="46" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="360" y="104" font-size="12" text-anchor="middle" fill="#1e3a8a">block 1</text>
+<rect x="470" y="76" width="150" height="46" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="545" y="104" font-size="12" text-anchor="middle" fill="#1e3a8a">block 2</text>
+<text x="52" y="166" font-size="12.5" fill="#155e75">thread_block —— 块内同步（替代 __syncthreads）</text>
+<rect x="70" y="180" width="120" height="48" rx="8" fill="#cffafe" stroke="#0891b2" stroke-width="1.4"/>
+<text x="130" y="200" font-size="11" text-anchor="middle" fill="#155e75">tile&lt;32&gt;</text>
+<text x="130" y="216" font-size="11" text-anchor="middle" fill="#0e7490">warp 0</text>
+<rect x="200" y="180" width="120" height="48" rx="8" fill="#cffafe" stroke="#0891b2" stroke-width="1.4"/>
+<text x="260" y="200" font-size="11" text-anchor="middle" fill="#155e75">tile&lt;32&gt;</text>
+<text x="260" y="216" font-size="11" text-anchor="middle" fill="#0e7490">warp 1</text>
+<rect x="330" y="180" width="120" height="48" rx="8" fill="#e0e7ff" stroke="#7461ba" stroke-width="1.4"/>
+<text x="390" y="200" font-size="11" text-anchor="middle" fill="#4338ca">coalesced</text>
+<text x="390" y="216" font-size="11" text-anchor="middle" fill="#4338ca">同路径活跃线程</text>
+<line x1="40" y1="258" x2="660" y2="258" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="40" y="280" font-size="11.5" fill="#475569">同步范围：warp/tile（隐式） → block（显式） → grid（需特殊 launch，且要求整个 grid 能同时驻留）</text>
+</svg>
+<figcaption>Cooperative Groups 把“分组”和“同步”解耦：同一个 block 内既能拿到整个 thread_block，也能切成 warp 大小的 tiled_partition 或只含同路径活跃线程的 coalesced_group；最外层的 grid_group 则把同步范围扩到整个 grid——代价是必须用专用 API 启动，且所有 block 必须能同时驻留。</figcaption>
+</figure>
 
         <table>
             <thead>
@@ -148,7 +372,7 @@ __global__ void cgBasicKernel(float *data, int n) {
             <strong>推荐用法：</strong> 任何时候你需要写 <code>__syncthreads()</code>，都改用 <code>cg::sync(this_thread_block())</code>。它做的事情完全一样，但更安全——因为 <code>cg::sync</code> 会检查你调用它的上下文是否正确，如果试图在一个不能同步的group上调用它，编译期就会报错。相比之下，<code>__syncthreads()</code> 在错误的位置调用时只会产生难以调试的运行时错误。
         </div>
 
-        <h3>Grid级别的同步</h3>
+        <h2>Grid级别的同步</h2>
 
         <p>传统CUDA编程中，block之间的同步只有一个办法：结束当前kernel，在host端等同步，再启动下一个kernel。这不仅引入了额外的launch开销，还迫使你把算法切成多个kernel——所有block级别的中间状态都必须通过全局内存传递，无法留在寄存器或共享内存中。</p>
 
@@ -216,13 +440,53 @@ int main() {
             这些约束意味着grid sync并不适用于任意规模的grid——它要求你的grid足够小，可以被GPU一次性容纳。
         </div>
 
-        <h3>Multi-Grid协作</h3>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="可驻留 block 数公式，可横向滚动">
+        <math display="block" aria-label="可同时驻留的 block 数等于 SM 数量乘以每个 SM 能容纳的最大 block 数">
+<mrow><msub><mi>B</mi><mtext>可驻留</mtext></msub><mo>=</mo><msub><mi>N</mi><mtext>SM</mtext></msub><mo>×</mo><msub><mi>B</mi><mtext>每SM</mtext></msub></mrow>
+</math>
+        </div>
+
+        <p>要启动的 block 数一旦超过这个上限，<code>cudaLaunchCooperativeKernel</code> 就会直接失败——这也是 grid sync 适合“小网格、多阶段”而不是“任意大规模网格”的根本原因。</p>
+
+        <div class="widget">
+<h3>交互：你的 grid 能被一次性容纳吗？</h3>
+<p>grid sync 要求所有 block 同时驻留。可驻留 block 数 ≈ SM 数 × 每 SM 最大 block 数（<strong>教学示意</strong>：实际还受寄存器/共享内存限制）。</p>
+<div class="control-row">
+  <label>要启动的 block 数 <input type="range" id="cg-b" min="1" max="2048" value="512"><span class="readout" id="cg-bv">512</span></label>
+  <label>SM 数 <input type="range" id="cg-sm" min="1" max="144" value="108"><span class="readout" id="cg-smv">108</span></label>
+  <label>每 SM 最大 block 数 <input type="range" id="cg-bs" min="1" max="32" value="16"><span class="readout" id="cg-bsv">16</span></label>
+  <button type="button" id="cg-demo">切到“过大 grid”</button>
+</div>
+<div class="readout" id="cg-out">—</div>
+<p class="readout" id="cg-note"></p>
+</div>
+<script>
+(function(){
+  var b=document.getElementById('cg-b'), sm=document.getElementById('cg-sm'), bs=document.getElementById('cg-bs');
+  function cap(){ return (+sm.value)*(+bs.value); }
+  function upd(){
+    var B=+b.value, c=cap(), ok=B<=c;
+    document.getElementById('cg-bv').textContent=B;
+    document.getElementById('cg-smv').textContent=sm.value;
+    document.getElementById('cg-bsv').textContent=bs.value;
+    document.getElementById('cg-out').innerHTML='需要 <b>'+B+'</b> 个 block，可驻留 <b>'+c+'</b> 个 → <b>'+(ok?'可行':'不可行')+'</b>';
+    document.getElementById('cg-note').textContent=ok
+      ? '网格能被一次性容纳：grid sync 成立。block 越大、每个 block 占用越多资源，可驻留数就越小。'
+      : '超过一次可驻留的 block 数：cudaLaunchCooperativeKernel 会直接返回错误——要么缩小 grid，要么改用多个 kernel 分阶段处理。';
+  }
+  [b,sm,bs].forEach(function(e){e.addEventListener('input',upd);});
+  document.getElementById('cg-demo').addEventListener('click',function(){ b.value=(+b.value<=cap())?2048:64; upd(); });
+  upd();
+})();
+</script>
+
+        <h2>Multi-Grid协作</h2>
 
         <p>除了单张GPU上的grid group，CUDA 11.x及之后的版本还支持跨越<strong>多张GPU</strong>的线程组同步——这就是 <strong>multi-grid groups</strong>。它允许你在同一个kernel启动中协调跨GPU节点的线程。具体来说，它和NCCL的通信功能结合，让程序员可以在多GPU环境下编写单kernel、多设备协作的代码。</p>
 
         <p>实际使用中，multi-grid group API的核心是 <code>cg::this_multi_grid()</code> 返回的 <code>multi_grid_group</code> 对象，它提供了 <code>grid_rank()</code>（当前GPU的rank）、<code>num_grids()</code>（参与协作的GPU数量）和 <code>sync()</code> 方法。需要配合 <code>cudaLaunchCooperativeKernelMultiDevice</code> 使用。这个特性在大规模分布式训练中相当有用——比如你可以在所有GPU上同步执行梯度all-reduce，而无需退出kernel再启动。</p>
 
-        <h3>CG实战模式</h3>
+        <h2>CG实战模式</h2>
 
         <p>理论讲了不少，我们来看两个具体对比——用传统方式和用CG方式实现同样的功能。</p>
 
@@ -284,13 +548,23 @@ __global__ void cgKernel(float *data, int n) {
 
         <p>下一章，我们要进入CUDA工具链的深度实战环节——<strong>NVIDIA Nsight 工具深度实战</strong>。有了前面22章的知识积累，是时候学习如何用专业工具真正地分析和优化你的CUDA程序了。第23章见。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Cooperative Groups（<code>this_thread_block</code>、<code>tiled_partition</code>、<code>this_grid</code>、<code>cudaLaunchCooperativeKernel</code>）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>CUDA Samples——<code>cooperative_groups</code> 与 <code>threadFenceReduction</code> 样例。</li>
+          <li>文中 grid sync 约束与老项目三处数据竞争案例属教学示意，具体以对应版本文档与实测为准。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="21.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="23.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
