@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第21章 动态并行</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,18 +233,51 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>动态并行</h1>
+          <p class="dek">动态并行让 kernel 自己决定要不要再启动 kernel，天生适合递归、树/图遍历与自适应网格。但它换来的代价是设备端 launch 开销与阻塞式同步——用对了才划算。</p>
+        </header>
 
-        <h2>动态并行</h2>
 
         <p>大家好，我是你们的讲师。前几章我们一直在学"如何更高效地从CPU向GPU下发任务"——CUDA Graph减少launch开销，多GPU编程让更多硬件参与计算。但这一章，我们要做一件看起来有些"叛逆"的事情：<strong>让GPU自己决定要不要启动新的内核</strong>。</p>
 
         <p>动态并行（Dynamic Parallelism）是Kepler架构（2012年）引入的特性。它的核心概念很简单：一个GPU kernel可以启动另一个GPU kernel。也就是说，<code>&lt;&lt;&lt;&gt;&gt;&gt;</code> 语法不仅可以在host代码中使用，也可以出现在 <code>__global__</code> 或 <code>__device__</code> 函数中。这为递归算法、自适应网格、树遍历等场景提供了一种极具表现力的编程模型。</p>
 
-        <h3>动态并行原理</h3>
+        <h2>动态并行原理</h2>
 
-        <p>动态共行的基本模型就是"内核之内启动内核"——我们称之为<strong>parent kernel</strong>和<strong>child kernel</strong>。parent kernel在GPU上执行的过程中，可以在某些条件下启动child kernel，然后通过 <code>cudaDeviceSynchronize()</code>（注意这是设备端版本）等待child kernel完成。</p>
+        <p>动态并行的基本模型就是“内核之内启动内核”——我们称之为<strong>parent kernel</strong>和<strong>child kernel</strong>。parent kernel在GPU上执行的过程中，可以在某些条件下启动child kernel，然后通过 <code>cudaDeviceSynchronize()</code>（注意这是设备端版本）等待child kernel完成。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-dp-title fig-dp-desc" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-dp-title">动态并行的嵌套启动树</title>
+<desc id="fig-dp-desc">父内核在 GPU 上按条件拆分成子内核，子内核再继续拆分，每次拆分后父内核阻塞等待子内核完成。</desc>
+<rect x="290" y="24" width="120" height="46" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.6"/>
+<text x="350" y="44" font-size="12" text-anchor="middle" fill="#1e3a8a">parent</text>
+<text x="350" y="60" font-size="11" text-anchor="middle" fill="#1d4ed8">深度 0</text>
+<line x1="350" y1="70" x2="230" y2="126" stroke="#94a3b8" stroke-width="1.6"/>
+<line x1="350" y1="70" x2="470" y2="126" stroke="#94a3b8" stroke-width="1.6"/>
+<rect x="170" y="126" width="120" height="46" rx="10" fill="#cffafe" stroke="#0891b2" stroke-width="1.6"/>
+<text x="230" y="146" font-size="12" text-anchor="middle" fill="#155e75">child</text>
+<text x="230" y="162" font-size="11" text-anchor="middle" fill="#0e7490">前半</text>
+<rect x="410" y="126" width="120" height="46" rx="10" fill="#cffafe" stroke="#0891b2" stroke-width="1.6"/>
+<text x="470" y="146" font-size="12" text-anchor="middle" fill="#155e75">child</text>
+<text x="470" y="162" font-size="11" text-anchor="middle" fill="#0e7490">后半</text>
+<line x1="230" y1="172" x2="150" y2="228" stroke="#94a3b8" stroke-width="1.6"/>
+<line x1="230" y1="172" x2="310" y2="228" stroke="#94a3b8" stroke-width="1.6"/>
+<rect x="90" y="228" width="120" height="46" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.6"/>
+<text x="150" y="250" font-size="12" text-anchor="middle" fill="#92400e">叶子任务</text>
+<text x="150" y="266" font-size="11" text-anchor="middle" fill="#b45309">不再拆分</text>
+<rect x="390" y="228" width="120" height="46" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.6"/>
+<text x="450" y="250" font-size="12" text-anchor="middle" fill="#92400e">叶子任务</text>
+<text x="450" y="266" font-size="11" text-anchor="middle" fill="#b45309">执行业务计算</text>
+<text x="540" y="150" font-size="11.5" fill="#b91c1c">每次拆分后父 kernel 阻塞等待</text>
+<text x="540" y="166" font-size="11.5" fill="#b91c1c">（设备端 cudaDeviceSynchronize）</text>
+</svg>
+<figcaption>动态并行把递归展开成一个在 GPU 上生长的启动树：父内核按条件决定拆分，子内核继续拆分直到叶子节点做真正的计算。注意每次拆分后父内核会阻塞等待全部子内核——这正是它与“host 端批量启动”在性能上分道扬镳的地方。</figcaption>
+</figure>
 
         <pre><code>// 动态并行：在GPU上启动GPU内核
 
@@ -113,7 +338,7 @@ int main() {
             <strong>关键区别：</strong> 在host端，我们用的是 <code>cudaStreamSynchronize</code> / <code>cudaDeviceSynchronize</code>。在设备端（动态并行中），我们用的是 <code>cudaDeviceSynchronize()</code> 的<strong>设备端版本</strong>——它只等待当前CUDA context中由本kernel启动的所有child kernels。每个child kernel有自己的<strong>隐式stream</strong>，相互之间是并发执行的。
         </div>
 
-        <h3>嵌套并行的适用场景</h3>
+        <h2>嵌套并行的适用场景</h2>
 
         <p>动态并行什么时候真的有用？以下几个场景是最典型的：</p>
 
@@ -126,7 +351,7 @@ int main() {
 
         <p>这些场景的共同特征是：<strong>计算负载分布不均匀，且负载分布在执行前不可预知</strong>。如果负载分布是均匀且已知的，那直接在host端做好work distribution就好了，不需要动态并行。</p>
 
-        <h3>动态并行的限制与开销</h3>
+        <h2>动态并行的限制与开销</h2>
 
         <p>动态并行非常强大，但它也有显著的代价和限制。很多初学者兴奋地把它用在了所有地方，结果发现性能反而下降了——因为没注意到这些局限。</p>
 
@@ -176,7 +401,43 @@ int main() {
             <strong>动态并行的核心取舍：</strong> 它在<strong>编程表达力</strong>上给了你极大的自由，但在<strong>性能</strong>上要求你付出代价。每次设备端launch都有~15-30微秒的开销，加上同步等待时间。如果你要启动的child kernel执行时间远大于30微秒，那这个代价可以接受；如果child kernel只有几微秒的计算量，那动态并行反而会拖慢整体速度。用动态并行的原则是：<strong>只在真正需要的地方使用，而且确保child kernel有足够的工作量来摊销launch开销</strong>。
         </div>
 
-        <h3>与Host端启动的对比</h3>
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="动态并行有效利用率公式，可横向滚动">
+        <math display="block" aria-label="动态并行的有效利用率等于子内核工作量除以工作量加设备端启动开销">
+<mrow><msub><mtext>利用率</mtext><mtext>有效</mtext></msub><mo>=</mo><mfrac><mi>W</mi><mrow><mi>W</mi><mo>+</mo><mi>L</mi></mrow></mfrac></mrow>
+</math>
+        </div>
+
+        <p>其中 W 是子内核真正的工作量，L 是设备端 launch 与同步开销。这个式子把“动态并行什么时候不划算”说透了：只有当 W 明显大于 L，利用率才及格。</p>
+
+        <div class="widget">
+<h3>交互：动态并行什么时候更慢？</h3>
+<p>设子内核工作量 W、设备端启动开销 L（<strong>教学示意</strong>：取 L=20 µs 的典型量级）。有效利用率 = W/(W+L)。</p>
+<div class="control-row">
+  <label>子内核工作量 W (µs) <input type="range" id="dp-w" min="1" max="200" value="3"><span class="readout" id="dp-wv">3</span></label>
+  <button type="button" id="dp-demo">切到“很重的子任务”</button>
+</div>
+<div class="readout" id="dp-out">—</div>
+<p class="readout" id="dp-note"></p>
+</div>
+<script>
+(function(){
+  var L=20;
+  var w=document.getElementById('dp-w');
+  function upd(){
+    var W=+w.value, u=W/(W+L)*100;
+    document.getElementById('dp-wv').textContent=W;
+    document.getElementById('dp-out').innerHTML='有效利用率 <b>'+u.toFixed(0)+'%</b>（开销 L≈'+L+' µs）';
+    document.getElementById('dp-note').textContent=(u<50)
+      ? '子内核太轻：一半以上的时间花在设备端 launch 与同步上，动态并行反而拖慢整体。'
+      : '子内核足够重：launch 开销被摊销，动态并行的表达力开始物有所值。';
+  }
+  w.addEventListener('input',upd);
+  document.getElementById('dp-demo').addEventListener('click',function(){ w.value=(+w.value<50)?200:2; upd(); });
+  upd();
+})();
+</script>
+
+        <h2>与Host端启动的对比</h2>
 
         <p>我们直接给结论：动态并行vs host端启动，没有绝对的好坏，取决于场景。</p>
 
@@ -204,13 +465,23 @@ int main() {
 
         <p>下一章我们要学习的<strong>Cooperative Groups</strong>，从另一个角度拓展了我们对GPU编程模型的理解——它让你以更灵活的方式组织线程，甚至可以在Grid级别进行同步。第22章见。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Dynamic Parallelism（设备端 <code>cudaDeviceSynchronize</code>、嵌套深度与 launch 限制）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>CUDA Programming Guide 中 Dynamic Parallelism 的 “Device-Side Launch” 与注意事项一节。</li>
+          <li>文中 24 层嵌套深度、15–30 µs 设备端 launch 开销、粒子模拟“慢 2 倍”等来自一次具体项目与文档量级，属教学示意。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="20.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="22.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
