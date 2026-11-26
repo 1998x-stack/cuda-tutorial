@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第20章 多GPU编程</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,16 +233,20 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>多GPU编程</h1>
+          <p class="dek">单卡不够用时，多卡的瓶颈往往不在 GPU 本身，而在 GPU 之间那条路。本章从拓扑与 P2P 直连讲起，再到 NCCL 集体通信与三种并行模式，先把“数据走哪条路”搞清楚。</p>
+        </header>
 
-        <h2>多GPU编程</h2>
 
         <p>大家好，我是你们的讲师。欢迎来到第20章。到目前为止，我们的所有讨论都基于"单张GPU"这个假设。但在真实的生产环境中，一张GPU几乎永远不够用——训练GPT-4需要数万张GPU跑上几个月；即使是一个中等规模的推荐系统推理服务，也常常需要4到8张GPU才能满足延迟和吞吐要求。</p>
 
         <p>这一章，我们会从硬件拓扑讲起，一步步带你掌握多GPU环境下的核心编程技术：设备管理、Peer-to-Peer访问、NCCL集体通信，以及三种主流的并行策略。学完本章，你会知道"如何让多张GPU不仅不打架，而且高效协作"。</p>
 
-        <h3>多GPU拓扑结构</h3>
+        <h2>多GPU拓扑结构</h2>
 
         <p>多GPU系统的性能瓶颈往往不是GPU本身，而是GPU之间的<strong>通信</strong>。如果你把两张GPU插在PCIe插槽上，它们之间通过PCIe交换数据，带宽和延迟都远不如通过NVLink直接互联。了解硬件拓扑是写出高效多GPU代码的第一步。</p>
 
@@ -112,7 +308,7 @@
 
         <p>这张表的核心信息是：<strong>NVLink比PCIe快一个数量级</strong>。如果你的多GPU工作负载有大量跨卡通信，一定尽量让通信走NVLink。很多人在8卡机器上训练时发现一个GPU的梯度同步比计算还慢，排查到最后的根因是——驱动没有启用P2P访问，数据被迫绕道CPU内存走PCIe，带宽从600 GB/s降到了32 GB/s。这个问题我们马上会讲到如何避免。</p>
 
-        <h3>设备管理与选择</h3>
+        <h2>设备管理与选择</h2>
 
         <p>多GPU编程的基本操作非常简单——CUDA用整数索引标识每张GPU。核心API就三个：<code>cudaGetDeviceCount</code> 查询设备数量，<code>cudaSetDevice</code> 选择当前设备，<code>cudaGetDevice</code> 获取当前设备ID。每个host线程都有自己当前的device上下文，互不干扰。</p>
 
@@ -169,9 +365,30 @@ int main() {
             <strong>黄金法则：</strong> 在任何cudaMalloc、cudaMemcpy或kernel launch之前，确保已经通过 <code>cudaSetDevice</code> 切换到了正确的GPU。一个常见的习惯是——在每个线程/循环的开头就显式设置device，不要依赖"当前device没变"这种假设。显式总比隐式安全。
         </div>
 
-        <h3>Peer-to-Peer（P2P）访问</h3>
+        <h2>Peer-to-Peer（P2P）访问</h2>
 
         <p>多GPU编程中最强大的特性之一就是直接内存访问——让一张GPU直接读写另一张GPU的显存，而不需要经过CPU做中转。启用方式很简单：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-p2p-title fig-p2p-desc" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-p2p-title">P2P 直连与经 CPU 绕行的数据路径</title>
+<desc id="fig-p2p-desc">上方 CPU 通过 PCIe 连接两侧 GPU；下面的直连箭头表示 GPU 间 P2P，不经过 CPU 内存，带宽高得多。</desc>
+<rect x="270" y="36" width="160" height="56" rx="10" fill="#e2e8f0" stroke="#64748b" stroke-width="1.6"/>
+<text x="350" y="70" font-size="13" text-anchor="middle" fill="#334155">CPU / 系统内存</text>
+<rect x="50" y="170" width="170" height="72" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.6"/>
+<text x="135" y="210" font-size="13" text-anchor="middle" fill="#1e3a8a">GPU 0</text>
+<rect x="480" y="170" width="170" height="72" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.6"/>
+<text x="565" y="210" font-size="13" text-anchor="middle" fill="#1e3a8a">GPU 1</text>
+<line x1="220" y1="206" x2="480" y2="206" stroke="#16a34a" stroke-width="3"/>
+<path d="M472 206 L482 206 M474 201 L482 206 L474 211 z" fill="#16a34a"/>
+<text x="350" y="196" font-size="12" text-anchor="middle" fill="#166534">P2P 直连（NVLink）≈ 600–900 GB/s</text>
+<path d="M110 170 L110 92 L285 92" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 4"/>
+<path d="M565 170 L565 92 L415 92" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="196" y="120" font-size="11.5" fill="#b91c1c">经 CPU 绕行（PCIe）≈ 32–64 GB/s</text>
+<text x="50" y="262" font-size="11.5" fill="#475569">带宽数字为 PCIe Gen4/5 与 NVLink 3/4 的典型值（教学示意），实际取决于拓扑与链路数。</text>
+</svg>
+<figcaption>同样是两张 GPU 之间的数据搬运，走 P2P 直连（NVLink）能把带宽提升一个数量级；一旦被迫经 CPU 绕行 PCIe，带宽就跌回 32–64 GB/s。这就是为什么 8 卡训练前一定要确认 P2P 已启用——否则梯度同步会悄悄变成瓶颈。</figcaption>
+</figure></p>
 
         <pre><code>// Peer-to-Peer (P2P) 访问示例
 
@@ -229,9 +446,47 @@ int main() {
             <strong>重要提醒：</strong> P2P访问不是在所有GPU组合之间都可用的。两个GPU必须属于同一棵PCIe树，或者通过NVLink直接相连。另外，P2P一旦启用，两张GPU的上下文就会被绑定——直到进程退出前，你无法单独销毁其中一个。所以建议在程序初始化时统一启用所有需要的P2P连接，不要在运行中动态开启和关闭。
         </div>
 
-        <h3>NCCL入门</h3>
+        <h2>NCCL入门</h2>
 
-        <p>如果说P2P是"点对点"通信的脚手架，那<strong>NCCL（NVIDIA Collective Communications Library）</strong>就是多GPU通信的"预制装配式房屋"。NCCL提供了AllReduce、Broadcast、AllGather、ReduceScatter等集体通信原语，经过深度优化，可以充分利用NVLink和NVSwitch的带宽。当今所有主流深度学习框架（PyTorch DDP、Horovod、DeepSpeed）的多GPU通信底层都依赖NCCL。</p>
+        <p>如果说P2P是“点对点”通信的脚手架，那<strong>NCCL（NVIDIA Collective Communications Library）</strong>就是多GPU通信的“预制装配式房屋”。NCCL提供了AllReduce、Broadcast、AllGather、ReduceScatter等集体通信原语，经过深度优化，可以充分利用NVLink和NVSwitch的带宽。当今所有主流深度学习框架（PyTorch DDP、Horovod、DeepSpeed）的多GPU通信底层都依赖NCCL。</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="环形 AllReduce 每卡发送量公式，可横向滚动">
+        <math display="block" aria-label="环形 AllReduce 每张 GPU 的发送量为 2 乘 N 减 1 除以 N 再乘数据量 S">
+<mrow><mtext>每卡发送量</mtext><mo>=</mo><mn>2</mn><mo>·</mo><mfrac><mrow><mi>N</mi><mo>−</mo><mn>1</mn></mrow><mi>N</mi></mfrac><mo>·</mo><mi>S</mi></mrow>
+</math>
+        </div>
+
+        <p>环形方案的巧妙之处在于：每张卡的发送量不随卡数线性膨胀——N 很大时它趋近于 2S，而“朴素”广播式需要 (N−1)·S。这就是为什么 NCCL 能在几十甚至上千张卡上保持良好扩展性。</p>
+
+        <div class="widget">
+<h3>交互：环形 AllReduce 到底要搬多少数据？</h3>
+<p>数据量 S（每卡），环形 AllReduce 每卡发送量约 2(N−1)/N·S，而“朴素”广播式需要 (N−1)·S（<strong>教学示意</strong>：只看发送量，不含实际链路效率）。</p>
+<div class="control-row">
+  <label>GPU 数量 N <input type="range" id="ar-n" min="2" max="16" value="8"><span class="readout" id="ar-nv">8</span></label>
+  <label>数据量 S (MB) <input type="range" id="ar-s" min="1" max="512" value="64"><span class="readout" id="ar-sv">64</span></label>
+  <button type="button" id="ar-demo">切到 2 卡 / 16 卡</button>
+</div>
+<div class="readout" id="ar-out">—</div>
+<p class="readout" id="ar-note"></p>
+</div>
+<script>
+(function(){
+  var n=document.getElementById('ar-n'), s=document.getElementById('ar-s');
+  function upd(){
+    var N=+n.value, S=+s.value;
+    var ring=2*(N-1)/N*S, naive=(N-1)*S;
+    document.getElementById('ar-nv').textContent=N;
+    document.getElementById('ar-sv').textContent=S;
+    document.getElementById('ar-out').innerHTML='环形每卡 <b>'+ring.toFixed(1)+' MB</b> vs 朴素 <b>'+naive.toFixed(1)+' MB</b>（省 '+(100*(1-ring/naive)).toFixed(0)+'%）';
+    document.getElementById('ar-note').textContent=(N>=8)
+      ? '卡数越多，环形 AllReduce 相对朴素广播的节省越大：每卡负担稳定在约 2S。'
+      : '卡数较少时两者差距不大，环形优势在 N 增大后显现。';
+  }
+  n.addEventListener('input',upd); s.addEventListener('input',upd);
+  document.getElementById('ar-demo').addEventListener('click',function(){ n.value=(+n.value<=2)?16:2; upd(); });
+  upd();
+})();
+</script>
 
         <pre><code>// NCCL AllReduce 示例
 
@@ -291,7 +546,7 @@ int main() {
 
         <p>注意NCCL的一个关键点：AllReduce是<strong>同步阻塞</strong>的——所有参与卡必须同时调用，否则会出现死锁。这也是为什么NCCL通常和MPI或分布式框架配合使用，确保所有rank同步推进。</p>
 
-        <h3>多GPU编程模式</h3>
+        <h2>多GPU编程模式</h2>
 
         <p>了解了底层通信工具后，我们来谈谈上层策略。多GPU并行编程主要有三种模式，下面这张表总结了它们的核心差异：</p>
 
@@ -340,13 +595,23 @@ int main() {
 
         <p>好了，多GPU编程的内容就讲到这里。我们学习了硬件拓扑、P2P访问、NCCL通信和三种并行模式。下一章，我们要讨论一个完全不同的思路——<strong>动态并行（Dynamic Parallelism）</strong>。如果让GPU自己决定什么时候启动新内核，会发生什么有趣的事情呢？第21章见。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NCCL 官方文档与用户指南：<a href="https://docs.nvidia.com/deeplearning/nccl/">docs.nvidia.com/deeplearning/nccl</a>。</li>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Multi-Device System（<code>cudaDeviceCanAccessPeer</code>、<code>cudaMemcpyPeer</code>、<code>cudaSetDevice</code>）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>环形 AllReduce 的 2(N−1)/N·S 发送量来自百度提出的 ring allreduce 方案，后被 NCCL 等库广泛采用；页中带宽数字与 loss spike 故事属教学示意。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="19.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="21.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
