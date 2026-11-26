@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第16章 调试与错误处理</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +233,14 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>调试与错误处理</h1>
+          <p class="dek">GPU 调试最难的地方不是工具不够，而是错误的“发生点”和“报告点”常常不在一个地方。本章把 compute-sanitizer、cuda-gdb、printf 分别放在合适的环节，并给出让错误尽早暴露的防御性写法。</p>
+        </header>
 
-        <h2>调试与错误处理</h2>
 
         <p>大家好，我是你们的讲师。GPU 调试比 CPU 调试困难得多——没有 printf（至少在早期）、没有完整的堆栈跟踪（stack trace）、经常只给你一个 " unspecified launch failure " 的错误信息，然后就没了。更糟的是，很多 bug 不会导致程序崩溃，而是悄悄地给出一个错误答案——你可能要跑完三天的模拟，最后才发现结果全是 NaN。</p>
 
@@ -54,7 +250,7 @@
             <strong>好消息是：</strong> NVIDIA 在过去几年开发了一系列非常强大的调试工具——compute-sanitizer、cuda-gdb、以及 CUDA 13.x 中引入的硬件辅助调试功能。学会它们，GPU 调试就不再是"玄学"了。本章的目标是让你掌握一套完整的调试方法论，遇到任何 GPU bug 都能有条不紊地定位和修复。
         </div>
 
-        <h3>compute-sanitizer内存检查</h3>
+        <h2>compute-sanitizer内存检查</h2>
 
         <p><code>compute-sanitizer</code> 是你在 GPU 调试中应该最先使用的工具。它是 NVIDIA 在 CUDA 11.0 中推出的内存检测工具（替代了老旧的 <code>cuda-memcheck</code>），无需重新编译程序，只需在你的程序前面加上 <code>compute-sanitizer</code> 即可。它能够检测出 GPU 代码中几乎所有常见的内存错误。</p>
 
@@ -103,7 +299,7 @@
             <strong>使用建议：</strong> 让你的 CI/CD 流程中包含 compute-sanitizer 这一步。每次提交代码之前，至少跑一次 <code>compute-sanitizer ./my_tests</code>。这会把 bug 扼杀在摇篮里，而不是等到上线后才被用户发现。代价是程序会运行得慢 5-10 倍（因为每次访存都需要硬件辅助检查），但对于测试流程来说，这完全值得。
         </div>
 
-        <h3>cuda-gdb基础</h3>
+        <h2>cuda-gdb基础</h2>
 
         <p>当 compute-sanitizer 告诉你"哪里错了"但你还想知道"为什么错"的时候，就该 cuda-gdb 出场了。cuda-gdb 是 GDB 的 CUDA 扩展版本，它能让你在 GPU 内核中设置断点、单步执行、检查变量值——就像调试 CPU 程序一样。</p>
 
@@ -145,9 +341,57 @@ cuda-gdb ./my_app
             <strong>注意：</strong> 编译内核时必须加上 <code>-G</code> 标志（设备端调试模式），cuda-gdb 才能正常工作。但这个标志会大幅降低内核执行速度（因为编译器会关闭很多优化），并且会增加内核的寄存器使用量。你的程序在 -G 模式下表现可能和 Release 模式不同——特别是涉及 race condition 的 bug。所以策略是：先用 -G 模式锁定问题的大致范围，然后去掉 -G 确认最终的修复是否生效。
         </div>
 
-        <h3>常见Bug分类与排查</h3>
+        <h2>常见Bug分类与排查</h2>
 
         <p>GPU 编程中遇到的 bug 虽然种类繁多，但绝大多数可以归为以下四类。掌握了每类的典型症状和排查工具，你就能很快地定位问题：</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="一维全局索引与边界条件，可横向滚动">
+        <math display="block" aria-label="全局线程索引等于线程块索引乘块内线程数加块内线程索引，合法条件为小于元素总数 N">
+<mrow><mi>idx</mi><mo>=</mo><mi>blockIdx.x</mi><mo>×</mo><mi>blockDim.x</mi><mo>+</mo><mi>threadIdx.x</mi><mo>,</mo><mspace width="0.5em"/><mtext>仅当</mtext><mspace width="0.5em"/><mi>idx</mi><mo>&lt;</mo><mi>N</mi></mrow>
+</math>
+        </div>
+
+        <p>这条式子就是绝大多数越界 bug 的根源：内核里每个线程都用它算出自己的全局下标，而守护它的只有一个不取等号的比较 <code>idx &lt; N</code>。只要 N 不是 blockDim 的整数倍，边界那一批线程就会越界。</p>
+
+        <div class="widget">
+<h3>交互：按症状选工具</h3>
+<p>选择你观察到的症状，看第一步该用哪个工具、往哪个方向查。<strong>教学示意</strong>：对照表为常见经验的归纳。</p>
+<div class="control-row">
+  <label>症状
+    <select id="dg-sym">
+      <option value="oob">随机崩溃 / 部分结果正确</option>
+      <option value="race">结果每次不一样</option>
+      <option value="illegal">illegal memory access</option>
+      <option value="nan">结果出现 NaN / Inf</option>
+      <option value="dead">程序卡住不动（死锁）</option>
+    </select>
+  </label>
+  <button type="button" id="dg-next">下一条症状</button>
+</div>
+<div class="readout" id="dg-out">—</div>
+<p class="readout" id="dg-note"></p>
+</div>
+<script>
+(function(){
+  var T={
+    oob:'第一步 compute-sanitizer 默认 Memory Check：报出越界访问的 kernel、block/thread 索引与地址。修复方向：核对索引公式、加边界保护。',
+    race:'第一步 compute-sanitizer --tool racecheck：定位共享/全局内存的数据竞争。修复方向：补 __syncthreads() 或改用原子操作。',
+    illegal:'第一步 compute-sanitizer（Memory Check）：常见于空指针入核或释放后访问。修复方向：检查 cudaMalloc 返回值与 cudaMemcpy 方向。',
+    nan:'第一步 compute-sanitizer --tool initcheck + cuda-gdb 条件断点：定位未初始化的共享/设备内存或除零。修复方向：初始化全部变量、加分母检查。',
+    dead:'第一步 compute-sanitizer --tool synccheck：常因 __syncthreads() 落在条件分支中。修复方向：保证 barrier 对所有线程可达。'
+  };
+  var sel=document.getElementById('dg-sym');
+  function upd(){
+    document.getElementById('dg-out').innerHTML='症状：<b>'+sel.options[sel.selectedIndex].text+'</b>';
+    document.getElementById('dg-note').textContent=T[sel.value];
+  }
+  sel.addEventListener('change',upd);
+  document.getElementById('dg-next').addEventListener('click',function(){
+    sel.selectedIndex=(sel.selectedIndex+1)%sel.options.length; upd();
+  });
+  upd();
+})();
+</script>
 
         <table>
             <thead>
@@ -202,9 +446,34 @@ cuda-gdb ./my_app
             <strong>调试黄金法则：</strong> 遇到 GPU bug 时，永远先跑 compute-sanitizer。它是最快、最便宜的工具。它解决不了的问题才需要 cuda-gdb。很多人在 bug 出现的第一时间就扎进 cuda-gdb 的单步调试中，结果是浪费了大量时间在一个 compute-sanitizer 5 秒就能捕获的越界问题上。从简单工具开始，逐步升级。
         </div>
 
-        <h3>防御性编程与错误处理宏</h3>
+        <h2>防御性编程与错误处理宏</h2>
 
-        <p>在 CUDA 编程中，防御性编程不是一种选择——而是必需品。GPU 是异步的，如果一个 kernel 启动失败，它不会立即报错——错误会被推迟到下一个同步点（cudaMemcpy、cudaDeviceSynchronize 等）。如果你不去检查返回值，你可能会得到一个看似"正常"的结果，但其实是错的。</p>
+        <p>在 CUDA 编程中，防御性编程不是一种选择——而是必需品。GPU 是异步的，如果一个 kernel 启动失败，它不会立即报错——错误会被推迟到下一个同步点（cudaMemcpy、cudaDeviceSynchronize 等）。如果你不去检查返回值，你可能会得到一个看似“正常”的结果，但其实是错的。</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-async-title fig-async-desc" viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-async-title">异步错误的“发生点”与“报告点”</title>
+<desc id="fig-async-desc">内核在 GPU 上执行时发生越界或非法访问，但错误码直下一个同步点才被返回，中间是错误潜伏期。</desc>
+<text x="16" y="56" font-size="12.5" fill="#334155">CPU 侧</text>
+<line x1="70" y1="64" x2="670" y2="64" stroke="#cbd5e1" stroke-width="1.4"/>
+<circle cx="140" cy="64" r="4.5" fill="#2563eb"/>
+<text x="96" y="52" font-size="11.5" fill="#1d4ed8">kernel&lt;&lt;&lt;&gt;&gt;&gt; 入队后立即返回</text>
+<circle cx="540" cy="64" r="4.5" fill="#2563eb"/>
+<text x="470" y="52" font-size="11.5" fill="#1d4ed8">cudaMemcpy / 同步点</text>
+<line x1="70" y1="64" x2="540" y2="64" stroke="#2563eb" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="16" y="156" font-size="12.5" fill="#334155">GPU 侧</text>
+<line x1="70" y1="164" x2="670" y2="164" stroke="#cbd5e1" stroke-width="1.4"/>
+<rect x="140" y="176" width="400" height="28" rx="5" fill="#93c5fd" stroke="#2563eb" stroke-width="1.2"/>
+<text x="340" y="195" font-size="12" text-anchor="middle" fill="#1e3a8a">内核实际执行</text>
+<line x1="390" y1="170" x2="390" y2="210" stroke="#dc2626" stroke-width="2.4"/>
+<text x="396" y="226" font-size="11.5" fill="#b91c1c">越界 / 非法访问在此发生</text>
+<line x1="540" y1="120" x2="540" y2="164" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="4 3"/>
+<text x="546" y="120" font-size="11.5" fill="#b91c1c">错误码直到此时才返回</text>
+<line x1="390" y1="110" x2="540" y2="110" stroke="#f59e0b" stroke-width="1.6"/>
+<text x="398" y="104" font-size="11.5" fill="#92600a">错误潜伏期（未被察觉）</text>
+</svg>
+<figcaption>内核入队后 CPU 立刻继续往下跑；真正的越界或非法访问发生在 GPU 执行中（红竖线），而错误码要到下一个同步点才返回。这段“潜伏期”里若不做检查，后续代码会基于错误状态继续跑。所以 <code>KERNEL_CHECK()</code> 管启动配置错，<code>SYNC_CHECK()</code> 管运行期故障，两者位置不同。</figcaption>
+</figure>
 
         <p>以下是一套我每个 CUDA 项目中都会包含的错误处理宏。你应该把它放在一个公共的头文件中，比如 <code>cuda_utils.h</code>：</p>
 
@@ -260,7 +529,7 @@ SYNC_CHECK();</code></pre>
             <strong>进阶建议：</strong> 在 Debug 构建中，可以在每个 kernel 启动后都调用 SYNC_CHECK()。但在 Release 构建中，去掉 SYNC_CHECK()（因为它会引入不必要的同步，拖慢性能）。用宏的条件编译（<code>#ifdef DEBUG</code>）来控制这个行为是最佳实践。
         </div>
 
-        <h3>内核printf调试</h3>
+        <h2>内核printf调试</h2>
 
         <p>最后说一个简单但极其实用的技巧：在 CUDA kernel 内部使用 <code>printf()</code>。是的，从 Fermi 架构（Compute Capability 2.0+）开始，CUDA 就支持在设备端直接调用 printf。它的行为和在 CPU 上类似——输出到标准输出流，但有一些重要的注意事项。</p>
 
@@ -292,7 +561,7 @@ SYNC_CHECK();</code></pre>
 
         <p>printf 适用于"这个 kernel 到底有没有跑？thread index 对不对？"这种快速验证场景。但它不能替代 compute-sanitizer 或 cuda-gdb——对比来说，printf 暴露的是"我看到的问题"，而 compute-sanitizer 暴露的是"你没想到的问题"。</p>
 
-        <h3>一次三天调试的教训</h3>
+        <h2>一次三天调试的教训</h2>
 
         <p>我想分享一个让我非常难忘的调试经历。有一次我在做一个金融风险模拟的 CUDA 项目，跑了三天的蒙特卡罗模拟后，发现所有结果都变成了 NaN。我们试了各种方法：检查索引、检查输入数据、甚至重写了半个 kernel。三天过去了，我们毫无头绪。</p>
 
@@ -302,13 +571,23 @@ SYNC_CHECK();</code></pre>
 
         <p>在下一章，我们将开始真正系统性地学习 CUDA 性能优化方法论——APOD 循环、瓶颈分析、以及一套完整的优化检查清单。调试让你把代码跑对，优化让你把代码跑快。这两件事合在一起，才是高性能 CUDA 编程的完整拼图。</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>compute-sanitizer 官方文档（含 Memory Check / RaceCheck / InitCheck / Synccheck 各工具模式）：<a href="https://docs.nvidia.com/compute-sanitizer/">docs.nvidia.com/compute-sanitizer</a>。</li>
+          <li>cuda-gdb 官方文档：<a href="https://docs.nvidia.com/cuda/cuda-gdb/">docs.nvidia.com/cuda/cuda-gdb</a>。</li>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Error Checking、Printf 与 Asynchronous Concurrent Execution 相关章节。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="15.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="17.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
