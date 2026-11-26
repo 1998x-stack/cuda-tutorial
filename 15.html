@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第15章 性能分析工具</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +233,14 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>性能分析工具</h1>
+          <p class="dek">优化之前先回答一个问题：这个 kernel 到底被什么卡住？Nsight Systems 给你宏观时间线，Nsight Compute 给你内核级指标，Roofline 模型把“算力天花板”和“带宽天花板”同时画在一张图上。先定位瓶颈，再动手改代码。</p>
+        </header>
 
-        <h2>性能分析工具</h2>
 
         <p>大家好，我是你们的讲师。会用 profiler 才是高级 CUDA 程序员的标志——先测量，再优化。我见过太多热血沸腾的新手，花了两周时间把内核代码改得面目全非，自认为做了"天衣无缝的优化"，结果一跑 benchmark——不仅没变快，反而慢了。为什么？因为他们不知道瓶颈在哪里。</p>
 
@@ -54,7 +250,7 @@
             <strong>核心原则：</strong> 永远不要凭感觉做优化。Profiler 是你的眼睛，它告诉你 GPU 的每一毫秒都花在了哪里。本章介绍的工具——Nsight Systems、Nsight Compute、Roofline 模型——是你工具箱中最核心的三件套。学会它们，你的优化效率至少提升 10 倍。
         </div>
 
-        <h3>Nsight Systems入门——从宏观鸟瞰</h3>
+        <h2>Nsight Systems入门——从宏观鸟瞰</h2>
 
         <p>Nsight Systems（nsys）是你最先应该打开的 profiler。它的定位是<strong>宏观性能分析</strong>：它告诉你整个应用程序的时间花在了哪里，包括 CPU 端的 API 调用、内存拷贝、以及 GPU 内核的执行。你可以把它想象成整个应用的"交通摄像头"——它不关心内核内部的具体细节，但它能清晰地给出全局的时间线（timeline view）。</p>
 
@@ -82,7 +278,7 @@ nsys profile -c cudaProfilerApi -o my_profile ./my_app  # 用cudaProfilerStart/S
             <strong>实用技巧：</strong> 在代码中插入 NVTX 标记（<code>nvtxRangePush()</code> / <code>nvtxRangePop()</code>），可以让你在 timeline 上看到每个阶段的名称——比如"数据加载"、"前向传播"、"反向传播"。这对理解大型应用程序的性能至关重要。只需要包含 <code>&lt;nvtx3/nvToolsExt.h&gt;</code> 并链接 <code>-lnvToolsExt</code> 即可。
         </div>
 
-        <h3>Nsight Compute入门——从微观深挖</h3>
+        <h2>Nsight Compute入门——从微观深挖</h2>
 
         <p>如果说 Nsight Systems 是"交通摄像头"，那么 Nsight Compute（ncu）就是"引擎诊断仪"。它深入到每个 kernel 的内部，告诉你<strong>为什么</strong>这个 kernel 跑得不够快——包括占用率（occupancy）、内存带宽利用率（memory bandwidth utilization）、计算吞吐量（compute throughput）等关键指标。</p>
 
@@ -112,11 +308,73 @@ ncu --section SpeedOfLight ./my_app             # 看计算吞吐和带宽的"�
             <strong>常见的"自我欺骗"：</strong> 很多人在初次使用 ncu 时，看到 Memory Throughput 达到了 60% 的理论带宽就觉得"已经够好了"。但请记住，对于许多 memory-bound kernel，优秀的目标是 80% 以上。60% 意味着你有一半的带宽潜力被浪费了——通常是因为非合并访问（unaligned / strided access）。
         </div>
 
-        <h3>Roofline模型</h3>
+        <h2>Roofline模型</h2>
 
         <p>Roofline 模型最早由 Berkeley 的 CS 系提出，是一种极其直观的可视化分析方法。它的核心思想很简单：<strong>一个 kernel 的性能上限由两个因素决定——计算能力和内存带宽，谁是瓶颈一目了然。</strong></p>
 
-        <p>Roofline 图的 x 轴是操作强度（operational intensity，单位是 FLOPs/Byte），y 轴是性能（FLOPS）。图中有一条斜线（带宽限制区）和一条平线（计算限制区），形成一个"屋顶"形状。你的 kernel 落在哪个区域，就决定了它的优化策略：</p>
+        <p>Roofline 图的 x 轴是操作强度（operational intensity，单位是 FLOPs/Byte），y 轴是性能（FLOPS）。图中有一条斜线（带宽限制区）和一条平线（计算限制区），形成一个“屋顶”形状。你的 kernel 落在哪个区域，就决定了它的优化策略：</p>
+
+        <figure>
+<svg role="img" aria-labelledby="fig-roofline-title fig-roofline-desc" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-roofline-title">Roofline 模型：带宽屋顶与算力屋顶</title>
+<desc id="fig-roofline-desc">横轴为操作强度，纵轴为可达性能。斜线是内存带宽给出的上限，平线是计算峰值上限，两者交点为脊点。</desc>
+<line x1="70" y1="270" x2="660" y2="270" stroke="#94a3b8" stroke-width="1.4"/>
+<line x1="70" y1="270" x2="70" y2="30" stroke="#94a3b8" stroke-width="1.4"/>
+<text x="660" y="292" font-size="12" text-anchor="end" fill="#475569">操作强度 (FLOP/Byte) →</text>
+<text x="18" y="36" font-size="12" fill="#475569">性能</text>
+<text x="18" y="52" font-size="12" fill="#475569">(TFLOP/s)</text>
+<line x1="70" y1="270" x2="360" y2="70" stroke="#2563eb" stroke-width="2.4"/>
+<text x="120" y="252" font-size="12" fill="#1d4ed8">内存带宽屋顶 = AI × BW</text>
+<line x1="360" y1="70" x2="660" y2="70" stroke="#d06d4d" stroke-width="2.4"/>
+<text x="470" y="58" font-size="12" fill="#9a3412">计算峰值屋顶</text>
+<line x1="360" y1="70" x2="360" y2="270" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 4"/>
+<circle cx="360" cy="70" r="4.5" fill="#0f172a"/>
+<text x="368" y="92" font-size="12" fill="#0f172a">脊点 AI* = 峰值/BW</text>
+<circle cx="180" cy="206" r="6" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>
+<text x="190" y="204" font-size="12" fill="#1d4ed8">memory-bound 内核</text>
+<text x="190" y="220" font-size="11" fill="#64748b">（向量加法、Stencil）</text>
+<circle cx="560" cy="70" r="6" fill="#d06d4d" stroke="#fff" stroke-width="1.5"/>
+<text x="450" y="116" font-size="12" fill="#9a3412">compute-bound 内核（GEMM）</text>
+</svg>
+<figcaption>Roofline 把性能上限画成“屋顶”：斜线是内存带宽给出的上限（性能 = 操作强度 × 带宽），平线是计算峰值。交点叫脊点；落在斜线一侧说明被带宽卡住，改访问模式才有用，落在平线一侧才该去抠计算。</figcaption>
+</figure>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="Roofline 性能上限公式，可横向滚动">
+        <math display="block" aria-label="可达性能等于计算峰值与操作强度乘带宽两者取较小值">
+<mrow><msub><mi>P</mi><mtext>可达</mtext></msub><mo>=</mo><mi>min</mi><mo>(</mo><msub><mi>P</mi><mtext>峰值</mtext></msub><mo>,</mo><mspace width="0.3em"/><mtext>操作强度</mtext><mo>×</mo><mtext>BW</mtext><mo>)</mo></mrow>
+</math>
+        </div>
+
+        <div class="widget">
+<h3>交互：你的内核撞的是哪块天花板？</h3>
+<p>以 A100 量级为参照（峰值约 19.5 TFLOP/s FP32、带宽约 1.55 TB/s，<strong>教学示意</strong>）：拖动操作强度，看可达性能由谁决定。</p>
+<div class="control-row">
+  <label>操作强度 AI (FLOP/Byte) <input type="range" id="rf-ai" min="1" max="40" value="4"><span class="readout" id="rf-aiv">4</span></label>
+  <button type="button" id="rf-demo">切到 compute-bound 示例</button>
+</div>
+<div class="readout" id="rf-out">—</div>
+<p class="readout" id="rf-note"></p>
+</div>
+<script>
+(function(){
+  var PEAK=19.5, BW=1.55, ridge=PEAK/BW;
+  var ai=document.getElementById('rf-ai');
+  function upd(){
+    var a=+ai.value, reach=Math.min(PEAK, a*BW);
+    document.getElementById('rf-aiv').textContent=a;
+    var bound=(a<ridge)?'memory-bound':'compute-bound';
+    document.getElementById('rf-out').innerHTML='可达 <b>'+reach.toFixed(2)+' TFLOP/s</b>，瓶颈：<b>'+bound+'</b>（脊点 AI*≈'+ridge.toFixed(1)+'）';
+    document.getElementById('rf-note').textContent=(a<ridge)
+      ? '操作强度低于脊点：带宽是天花板，优化数据复用、合并访问、加大计算强度才有收益。'
+      : '操作强度高于脊点：计算峰值是天花板，优化指令数、用 Tensor Core 或降精度才有收益。';
+  }
+  ai.addEventListener('input',upd);
+  document.getElementById('rf-demo').addEventListener('click',function(){
+    ai.value=(+ai.value<ridge)?40:2; upd();
+  });
+  upd();
+})();
+</script>
 
         <table>
             <thead>
@@ -155,7 +413,7 @@ ncu --section SpeedOfLight ./my_app             # 看计算吞吐和带宽的"�
             <strong>Roofline 的最大的价值：</strong> 它帮你避免了"方向性错误"。假如你的 kernel 明显是 memory-bound，你去优化指令并行度（ILP）就是在错误的方向上使劲——你应该去优化数据访问模式。反之，如果 kernel 已经是 compute-bound，你再优化内存也没用，不如考虑用 Tensor Cores 或降低精度。Roofline 告诉你：<strong>不要跟错误的天花板打架</strong>。
         </div>
 
-        <h3>Occupancy分析</h3>
+        <h2>Occupancy分析</h2>
 
         <p>Occupancy 的定义很简单：<strong>每个 SM 上活跃的 warp 数量 / SM 支持的最大 warp 数量</strong>。它的重要性在于：高 occupancy 能让 GPU 通过 warp 切换来隐藏延迟（latency hiding）。但这不代表 occupancy 越高越好——有时候低 occupancy 反而能跑得更快（比如每个线程需要大量寄存器时）。</p>
 
@@ -197,7 +455,7 @@ float occupancy = (max_active_blocks * block_size / 32.0f)
             <strong>一个实用的简单规则：</strong> 如果 kernel 是 memory-bound，尽量让 occupancy &gt; 50%（让更多的 warp 可供切换来隐藏内存延迟）；如果 kernel 是 compute-bound，occupancy &gt; 25% 通常就够了，因为计算单元本身不会因为 warp 不够而闲置。当然，这只是一个经验法则，具体情况要用 ncu 来验证。
         </div>
 
-        <h3>NVIDIA Visual Profiler (nvvp) 与 nvprof</h3>
+        <h2>NVIDIA Visual Profiler (nvvp) 与 nvprof</h2>
 
         <p>你可能在老旧文档或 StackOverflow 的老帖子里看到过 <code>nvprof my_app</code> 或 NVIDIA Visual Profiler（nvvp）。它们曾经是 CUDA 性能分析的标配工具，但现在已经被 Nsight Systems 和 Nsight Compute 完全取代。NVIDIA 在 CUDA 11.x 及后续版本中已经移除了 nvprof 和 nvvp，只提供 Nsight 系列工具。</p>
 
@@ -214,7 +472,7 @@ float occupancy = (max_active_blocks * block_size / 32.0f)
             <strong>迁移提醒：</strong> 如果你在网上搜索 CUDA 性能分析的相关问题，注意帖子的日期。2020 年之前的回答大概率在介绍 nvprof/nvvp，而 2022 年之后的应该都是 Nsight 工具。作为新学者，直接学 Nsight 系列即可，不必在老工具上浪费时间。
         </div>
 
-        <h3>一个真实的教训</h3>
+        <h2>一个真实的教训</h2>
 
         <p>最后分享一个让我铭记至今的故事。几年前，我在优化一个流体模拟的 kernel。直觉告诉我，"这一定是 compute-bound 的——因为算法很复杂，计算量大"。于是我花了整整三周时间，做了各种指令级别的优化：减少除法、用 intrinsic、循环展开、甚至手写汇编级别的 PTX 调优。每次改动，性能提升都微乎其微——1%、2%、最多 5%。</p>
 
@@ -224,13 +482,23 @@ float occupancy = (max_active_blocks * block_size / 32.0f)
 
         <p>在下一章，我们将进入一个同样重要的领域——调试与错误处理。如果说 profiler 是你的"眼睛"，那调试工具就是你的"手术刀"。当你的内核跑出了错误的结果——或者干脆崩溃了——你需要知道如何精准地定位问题。准备好了吗？</p>
 
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>NVIDIA《CUDA C++ Programming Guide》——Asynchronous Concurrent Execution 与 occupancy 相关 API（<code>cudaOccupancyMaxPotentialBlockSize</code>）：<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">docs.nvidia.com/cuda/cuda-c-programming-guide</a>。</li>
+          <li>Nsight Systems 与 Nsight Compute 官方文档：<a href="https://docs.nvidia.com/nsight-systems/">docs.nvidia.com/nsight-systems</a>、<a href="https://docs.nvidia.com/nsight-compute/">docs.nvidia.com/nsight-compute</a>。</li>
+          <li>Roofline 模型源自 Williams、Waterman、Patterson 的 <em>Roofline: An Insightful Visual Performance Model for Multicore Architectures</em>（CACM 2009）；页中 19.5 TFLOP/s、1.55 TB/s 为 A100 量级参照，属教学示意。</li>
+        </ul>
+      </section>
+      </article>
+
         <div class="footer-nav">
             <a href="14.html">← 上一章</a>
             <a href="index.html">📖 返回目录</a>
             <a href="16.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
