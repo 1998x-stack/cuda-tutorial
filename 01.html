@@ -4,12 +4,204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
     <title>第1章 GPU计算的前世今生</title>
-    <link rel="stylesheet" href="theme.css">
+    <style id="inline-cuda-css">
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    background: linear-gradient(135deg, #f0f4f8 0%, #dce4ec 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+    padding: 20px;
+}
+
+/* === Layout === */
+.double-border {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 2px solid #64748b;
+    border-radius: 24px;
+    box-shadow: 0 20px 30px -15px rgba(0,0,0,0.2), inset 0 1px 0 0 #f0f4f8;
+    overflow: hidden;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+}
+
+/* === Sidebar === */
+.sidebar {
+    background: #f8fafc;
+    border-right: 2px solid #cbd5e1;
+    padding: 24px 16px;
+}
+
+.sidebar h3 {
+    font-size: 1.4rem;
+    color: #1e3a5f;
+    border-left: 5px solid #3b82f6;
+    padding-left: 15px;
+    margin-bottom: 25px;
+}
+
+.chapter-list { list-style: none; }
+.chapter-list li { margin-bottom: 6px; }
+
+.chapter-list a {
+    display: block; padding: 8px 12px; text-decoration: none;
+    color: #334155; border-radius: 12px; transition: all 0.2s;
+    font-weight: 500; font-size: 0.92rem;
+}
+
+.chapter-list a:hover {
+    background: #e2e8f0;
+    transform: translateX(3px);
+}
+
+.chapter-list .active {
+    background: #475569;
+    color: white;
+    box-shadow: 0 2px 5px rgba(71,85,105,0.3);
+}
+
+/* === Main Content === */
+.main-content { padding: 30px 35px; background: white; }
+
+/* === Typography === */
+h2 {
+    color: #0f172a;
+    border-left: 6px solid #3b82f6;
+    padding-left: 15px;
+    margin: 20px 0 15px;
+    font-size: 1.5rem;
+}
+
+h3 {
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+}
+
+h4 {
+    color: #334155;
+    margin: 15px 0 8px;
+    font-size: 1.05rem;
+}
+
+p { line-height: 1.85; margin: 10px 0; color: #1e293b; }
+ul, ol { margin: 10px 0 10px 20px; line-height: 1.8; }
+li { color: #1e293b; margin-bottom: 4px; }
+strong { color: #1e1b4b; }
+
+/* === Code === */
+pre {
+    background: #0f172a; color: #e8e8f0; padding: 15px; border-radius: 12px;
+    overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 15px 0; font-size: 0.9rem; line-height: 1.5;
+}
+
+code {
+    background: #f0f4f8; padding: 2px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+}
+
+pre code { background: none; padding: 0; }
+
+/* === Tables === */
+table {
+    width: 100%; border-collapse: collapse; margin: 15px 0; background: #fafafe;
+}
+
+th, td {
+    border: 1px solid #cbd5e1; padding: 10px; text-align: left;
+}
+
+th {
+    background: #f0f4f8; color: #1e3a5f; font-weight: 600;
+}
+
+/* === Callout Boxes === */
+.tip {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #e0f2fe; border-left: 6px solid #0ea5e9;
+}
+
+.warning {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fee2e2; border-left: 6px solid #ef4444;
+}
+
+.highlight {
+    padding: 12px 18px; border-radius: 16px; margin: 15px 0; line-height: 1.7;
+    background: #fef9c3; border: 1px solid #facc15;
+}
+
+/* === Footer Navigation === */
+.footer-nav {
+    margin-top: 45px; padding-top: 20px;
+    border-top: 2px solid #cbd5e1;
+    display: flex; justify-content: space-between;
+}
+
+.footer-nav a {
+    padding: 8px 24px; background: #f1f5f9; text-decoration: none;
+    color: #1e40af; border-radius: 40px; font-weight: 500; transition: 0.2s;
+}
+
+.footer-nav a:hover {
+    background: #e2e8f0; transform: translateY(-2px);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 2px solid #cbd5e1; }
+    body { padding: 10px; }
+    .main-content { padding: 20px; }
+}
+
+/* === Olah-style article enrichment (figures, math, widgets) === */
+.skip-link { position:absolute; left:12px; top:-60px; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px; z-index:20; }
+.skip-link:focus { top:12px; }
+.main-content h1 { color:#0f172a; font-size:1.9rem; line-height:1.3; margin:6px 0 10px; }
+.dek { color:#475569; font-size:1.08rem; line-height:1.75; margin:0 0 10px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+[data-math-scroll]:focus-visible, .table-scroll:focus-visible { outline:3px solid #2563eb; outline-offset:2px; }
+figure { margin:22px 0; padding:16px; border:1px solid #cbd5e1; border-radius:16px; background:#fff; }
+figure svg { width:100%; height:auto; display:block; }
+figcaption { font-size:.86rem; line-height:1.7; color:#475569; border-top:1px solid #e2e8f0; margin-top:12px; padding-top:10px; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.widget { margin:22px 0; padding:16px 18px; border:1px solid #cbd5e1; border-radius:16px; background:#f8fafc; }
+.widget h3 { margin-top:0; }
+.control-row { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; margin:10px 0; }
+.control-row label { display:flex; flex-direction:column; font-size:.82rem; color:#475569; gap:4px; }
+.control-row input, .control-row select { font:inherit; font-size:.95rem; padding:6px 8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#0f172a; }
+.control-row input[type=range] { width:190px; }
+button { font:inherit; padding:7px 16px; border:1px solid #2563eb; border-radius:40px; background:#2563eb; color:#fff; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.readout { font-family:'JetBrains Mono',monospace; font-size:.95rem; color:#0f172a; margin:8px 0; }
+.readout b { color:#1d4ed8; }
+.math-scroll { max-width:100%; overflow-x:auto; padding:6px 2px; }
+math { font-size:1.08em; }
+.formula { margin:18px 0; text-align:center; }
+@media (max-width: 768px) {
+    figure { padding:10px; }
+    .main-content h1 { font-size:1.55rem; }
+    .control-row input[type=range] { width:130px; }
+}
+@media print { .skip-link, .footer-nav, .control-row { display:none !important; } figure { break-inside:avoid; } .math-scroll { overflow:visible; } }
+.main-content, .sidebar { min-width: 0; }
+.table-scroll table { min-width: 560px; }
+
+
+</style>
 </head>
 <body>
+<a class="skip-link" href="#content">跳转至正文</a>
 <div class="double-border">
 <div class="container">
-    <div class="sidebar">
+    <nav class="sidebar" aria-label="课程目录">
         <h3>🖥️ 课程目录</h3>
         <ul class="chapter-list">
             <li><a href="01.html" class="active">第1章 GPU计算的前世今生</a></li>
@@ -41,10 +233,13 @@
             <li><a href="27.html">第27章 GPU计算未来趋势</a></li>
             <li><a href="28.html">第28章 综合项目：手写高性能GEMM</a></li>
         </ul>
-    </div>
-    <div class="main-content">
-
-        <h2>GPU计算的前世今生</h2>
+    </nav>
+    <main id="content" class="main-content">
+      <article>
+        <header class="article-header">
+          <h1>GPU计算的前世今生</h1>
+          <p class="dek">GPU 编程和 CPU 编程的分歧不在语法，而在思维模型。这一章从 1990 年代的固定功能图形卡讲到 2026 年的 CUDA 13.3，回答一个底层问题：GPU 为什么会“长成这样”，以及这种形态为什么天生适合并行计算。</p>
+        </header>
 
         <p>大家好，我是你们的讲师。在正式开始写任何一行CUDA代码之前，我想先花一整章的篇幅，带大家回到故事的开头。你可能会问："学一门技术直接上手不就好了，为什么要听历史课？" 我的回答是：GPU编程和CPU编程的思路有着本质区别——这种区别不是语法层面的，而是思维模型层面的。不理解GPU"从哪里来"，你就很难真正理解它"为什么长这样"，更不用说写出高性能的CUDA代码了。</p>
 
@@ -54,7 +249,32 @@
             <strong>读史使人明智。</strong> 这一章不要求你记住任何API或语法——但读完它，你应该能回答这个问题："为什么GPU适合并行计算，而CPU更适合串行任务？" 带着这个理解，后面的每一章都在为这个答案增添细节。
         </div>
 
-        <h3>从像素到计算——GPU的起源 (~1990s)</h3>
+        <figure>
+<svg role="img" aria-labelledby="fig-tl-title fig-tl-desc" viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+<title id="fig-tl-title">GPU 计算能力的演进时间线</title>
+<desc id="fig-tl-desc">从 1990 年代固定功能管线，到 2001 年可编程着色器、2000 年代 GPGPU、2007 年 CUDA 1.0、2018 年 Tensor Core，再到 2020 年代大模型时代，可被编程的范围不断扩大。</desc>
+<line x1="42" y1="112" x2="686" y2="112" stroke="#94a3b8" stroke-width="2.2"/>
+<polygon points="686,112 674,106 674,118" fill="#94a3b8"/>
+<g font-size="11.5" fill="#0f172a" text-anchor="middle">
+<circle cx="88" cy="112" r="7" fill="#a7d4a0" stroke="#3f8f5a"/>
+<text x="88" y="92">1990s</text><text x="88" y="138" fill="#475569">固定功能管线</text>
+<circle cx="200" cy="112" r="7" fill="#f5d44a" stroke="#b8860b"/>
+<text x="200" y="92">2001</text><text x="200" y="138" fill="#475569">可编程着色器</text>
+<circle cx="312" cy="112" r="7" fill="#f7b07a" stroke="#c2410c"/>
+<text x="312" y="92">2002–06</text><text x="312" y="138" fill="#475569">GPGPU·图形 API</text>
+<circle cx="438" cy="112" r="7" fill="#93c5fd" stroke="#2563eb"/>
+<text x="438" y="92">2007</text><text x="438" y="138" fill="#475569">CUDA 1.0·C 语言</text>
+<circle cx="560" cy="112" r="7" fill="#c4b3e0" stroke="#7c3aed"/>
+<text x="560" y="92">2018</text><text x="560" y="138" fill="#475569">Tensor Core</text>
+<circle cx="662" cy="112" r="7" fill="#f7c6c6" stroke="#dc2626"/>
+<text x="662" y="92">2020s</text><text x="662" y="138" fill="#475569">大模型时代</text>
+</g>
+<text x="364" y="186" font-size="12" text-anchor="middle" fill="#334155">可编程范围不断扩大：写死的管线 → 通用计算 → 为 AI 定制的矩阵引擎</text>
+</svg>
+<figcaption>这张时间线把本章要讲的主线压成一条轴：每一代硬件变革都在做同一件事——把原本写死或需要用图形 API 迂回表达的能力，变成程序员可以直接编排的通用并行计算。</figcaption>
+</figure>
+
+        <h2>从像素到计算——GPU的起源 (~1990s)</h2>
 
         <p>1990年代，如果你是个游戏玩家，那你一定听说过"3D加速卡"这个名字。那时候所谓的"显卡"其实是个非常单纯的设备——它的任务就是把CPU送过来的三角形数据变成屏幕上的像素点。这就是所谓的<strong>固定功能管线</strong>（fixed-function pipeline）：顶点进来，经过变换、光照、光栅化、纹理映射，像素出去。每个环节都是硬件写死的，程序员能做的只有调整参数。</p>
 
@@ -66,7 +286,7 @@
             <strong>你知道吗？</strong> 早期GPU编程圈有一个著名的段子："你的算法能渲染吗？"意思是——如果你想把问题交给GPU处理，你得先把它包装成一个图形渲染问题。矩阵乘法？那是纹理采样。物理模拟？那是顶点变换。神经网络？那是像素着色器。这种方法虽然别扭，但它证明了GPU拥有巨大的计算潜力。
         </div>
 
-        <h3>GPGPU时代——用图形API做科学计算 (~2000-2006)</h3>
+        <h2>GPGPU时代——用图形API做科学计算 (~2000-2006)</h2>
 
         <p>"GPGPU"全称是General-Purpose computing on Graphics Processing Units。这个词在今天听起来平平无奇，但在2000年代初期，它代表着一种极其叛逆的计算哲学：<strong>用游戏显卡跑科学计算</strong>。</p>
 
@@ -103,7 +323,7 @@ void main() {
             <strong>真实的"踩坑"故事：</strong> 我认识一位在2004年做流体模拟的研究员，为了调试一个GPU上的数值误差，他花了整整三周。最后发现原因是纹理插值（texture filtering）默认是开启的，导致GPU在读取他"数组"中的相邻元素时自动做了线性插值——他以为是数组读取，实际上硬件把它当成了图像采样。你们看，当计算被伪装成渲染时，连"读一个数"这种最基本的操作都可能被硬件"好心办坏事"。这种痛苦直接催生了一个想法：为什么不能让GPU提供一个真正的、不依赖图形API的计算接口？这个想法，就是CUDA的种子。
         </div>
 
-        <h3>CUDA的诞生——2006年的范式革命</h3>
+        <h2>CUDA的诞生——2006年的范式革命</h2>
 
         <p>2006年秋天，NVIDIA做出了一个在当时看来极其冒险的决定。他们发布了G80架构（GeForce 8800 GTX），这是世界上第一款<strong>统一着色器架构</strong>（unified shader architecture）的GPU。什么意思呢？在G80之前，GPU内部有独立的顶点着色器单元和像素着色器单元，各自独立、数量固定。如果某个游戏需要大量顶点计算，像素单元就在闲着；反过来也如此。G80将这些全部统一成了通用的流处理器（stream processor），可以根据负载动态分配。</p>
 
@@ -147,10 +367,11 @@ int main() {
             <strong>划时代的意义在于：</strong> 第一次，你不必把自己伪装成图形程序员来做科学计算了。CUDA的核心理念——"GPU是一种强大的协处理器，CPU负责控制，GPU负责大规模并行计算"——至今仍然是异构计算的基石。今天你看到的几乎所有AI加速库（PyTorch、TensorFlow、JAX）底层的GPU支持，都建立在这个理念之上。
         </div>
 
-        <h3>CUDA生态的演进——从边缘到主流 (~2008-2020)</h3>
+        <h2>CUDA生态的演进——从边缘到主流 (~2008-2020)</h2>
 
         <p>CUDA最初的几年其实非常艰难。2007-2009年，质疑声铺天盖地："谁需要用显卡做通用计算？这不过是个小众玩具。" Intel和AMD也分别推出了Larrabee和Stream SDK作为竞品。但NVIDIA坚持了每两年一代架构的节奏，每一代都带来重要的特性。下面这张表能帮你快速把握这段演化史：</p>
 
+        <div class="table-scroll" tabindex="0" role="region" aria-label="CUDA 各代架构演进对照表，可横向滚动">
         <table>
             <thead>
                 <tr>
@@ -206,6 +427,7 @@ int main() {
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <p>你可能注意到一个有趣的巧合：<strong>Volta架构和Transformer论文是同一年出现的</strong>。2017年"Attention Is All You Need"发表，2018年V100带着第一代Tensor Cores上市。这绝不仅仅是巧合——Volta的设计团队在架构规划时就深度调研了深度学习社区的需求。Tensor Cores专门为矩阵乘累加（GEMM）优化，而矩阵乘法恰恰是Transformer的核心运算。硬件和算法的协同进化，在GPU的历史上体现得淋漓尽致。</p>
 
@@ -215,7 +437,7 @@ int main() {
             <strong>一个有趣的视角：</strong> 如果说Windows 95是"让每个人都能用PC"，那么CUDA就是"让每个人都能用GPU"。在CUDA出现之前，GPU编程是少数图形学博士的专属技能；在CUDA成熟之后，一个本科生花一个下午就能写出能在GPU上跑的并行程序。这种"民主化"的进程，才是CUDA对整个计算产业最深远的贡献。
         </div>
 
-        <h3>现代CUDA全景 (~2020-2026)</h3>
+        <h2>现代CUDA全景 (~2020-2026)</h2>
 
         <p>进入2020年代，CUDA的发展速度不仅没有放缓，反而因为AI大模型的爆发而加速了。看看最近几年的关键节点：</p>
 
@@ -239,11 +461,63 @@ int main() {
             <strong>所以，为什么是现在学CUDA？</strong> 因为在AI时代，理解GPU编程已经不是"加分项"而是"基本功"了。无论是训练大模型、部署推理服务，还是做高性能计算、图形渲染，CUDA都是那座绕不开的桥。今天全球排名前500的超算中，绝大多数都依赖GPU加速；每一个你用过的AI产品——从ChatGPT到Midjourney——底层都跑在CUDA代码上。学会CUDA，你就拿到了这个时代最强大的计算工具的钥匙。
         </div>
 
-        <h3>下章预告：动手干起来！</h3>
+        <h2>为什么并行能带来数量级提升？</h2>
+
+        <p>回顾这段历史会发现：GPU 提升性能的方式，始终是“把一大块工作切成许多互不依赖的小块同时算”。但并行并非万能——只有可并行的那部分才会加速。这个权衡由 Amdahl 定律给出一个朴素但常被忽视的上界。</p>
+
+        <div class="formula math-scroll" data-math-scroll tabindex="0" role="region" aria-label="Amdahl 定律加速比公式，可横向滚动">
+        <math display="block" aria-label="加速比等于一除以，串行部分 1 减 p，加上可并行部分 p 除以处理器数 n">
+<mrow><mi>S</mi><mo>=</mo><mfrac><mn>1</mn><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>p</mi><mo>)</mo><mo>+</mo><mfrac><mi>p</mi><mi>n</mi></mfrac></mrow></mfrac></mrow>
+</math>
+        </div>
+
+        <p>其中 <code>p</code> 是可并行比例，<code>n</code> 是处理器数量。当 <code>n</code> 趋于无穷，加速比的上限是 <code>1/(1−p)</code>——也就是说，<strong>串行的那一小截会牢牢卡住整体收益</strong>。这正是后续章节反复强调减少同步、减少串行段、让访存与计算重叠的原因。</p>
+
+        <div class="widget">
+<h3>交互：Amdahl 定律下的加速上限</h3>
+<p>拖动滑块观察加速比如何随可并行比例与处理器数变化（<strong>教学示意</strong>：忽略并行开销的理想模型）。</p>
+<div class="control-row">
+  <label>可并行比例 p <input type="range" id="am-p" min="50" max="100" value="90"><span class="readout" id="am-pv">0.90</span></label>
+  <label>处理器数 n <input type="range" id="am-n" min="1" max="1024" value="64"><span class="readout" id="am-nv">64</span></label>
+  <button type="button" id="am-ideal">设为完全并行（p=100%）</button>
+</div>
+<div class="readout" id="am-out">—</div>
+<p class="readout" id="am-note"></p>
+</div>
+<script>
+(function(){
+  var p=document.getElementById('am-p'), n=document.getElementById('am-n');
+  function upd(){
+    var P=+p.value/100, N=+n.value;
+    var s=1/((1-P)+P/N), cap=1/(1-P);
+    document.getElementById('am-pv').textContent=P.toFixed(2);
+    document.getElementById('am-nv').textContent=N;
+    document.getElementById('am-out').innerHTML='加速比 <b>'+s.toFixed(2)+'×</b>　·　理论上限 <b>'+cap.toFixed(2)+'×</b>';
+    document.getElementById('am-note').textContent=(P<1)
+      ? '即便把 n 从 '+N+' 翻倍，上限也不会超过 '+cap.toFixed(2)+'×；提高 p 比堆核更划算。'
+      : '理论完全并行：此时加速比才随 n 线性增长。';
+  }
+  [p,n].forEach(function(e){e.addEventListener('input',upd);});
+  document.getElementById('am-ideal').addEventListener('click',function(){p.value=100;n.value=256;upd();});
+  upd();
+})();
+</script>
+
+        <h2>下章预告：动手干起来！</h2>
 
         <p>好了，历史课到此结束。从第二章开始，我们要真正动手了。你会在自己的机器上搭建CUDA开发环境——安装驱动、CUDA Toolkit、配置VS Code或IDE，然后编译并运行你的第一个CUDA程序。不管你现在用的是什么操作系统（Windows、Linux还是macOS），我都会一步步带你完成配置。</p>
 
         <p>记住一句话：<strong>学习CUDA最好的方式，就是写CUDA代码。</strong> 我在第二章等你。</p>
+
+      <section id="refs" aria-labelledby="refs-h">
+        <h2 id="refs-h">进一步阅读</h2>
+        <ul>
+          <li>Ian Buck 博士论文 “Stream Computing on Graphics Hardware”（斯坦福，2004）——CUDA 之前用图形硬件做通用计算的奠基性工作。</li>
+          <li>CUDA 官方文档与各代架构白皮书：<a href="https://docs.nvidia.com/cuda/">docs.nvidia.com/cuda</a>（含 Fermi 至 Blackwell 特性说明）。</li>
+          <li>本章为架构演进综述；文中年份与世代特性均可回溯到 NVIDIA 官方架构资料，无实验性能数字。</li>
+        </ul>
+      </section>
+      </article>
 
         <div class="footer-nav">
             <a href="javascript:void(0)">← 上一章</a>
@@ -251,7 +525,7 @@ int main() {
             <a href="02.html">下一章 →</a>
         </div>
 
-    </div>
+    </main>
 </div>
 </div>
 </body>
