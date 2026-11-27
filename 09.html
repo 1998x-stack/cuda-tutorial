@@ -206,6 +206,27 @@ button:hover{background:var(--accent);color:#fff}
 
         <p>关键点在于：一个 warp 的 32 个线程执行同一条指令，所以它们的地址模式是确定的。如果代码写成了非合并访问，那就是纯粹的程序员失误——硬件没法帮你优化。</p>
 
+        <p>把“合并得好不好”量化成一个效率，只需比较有用字节与真正搬运的字节。设每个元素 w 字节、步长为 s，整个 warp 的地址跨度为 (31s+1)w 字节，跨过的 128 字节缓存行数记作 N<sub>line</sub>，则：</p>
+
+        <div class="math-equation" role="group" aria-label="合并访问带宽利用率公式">
+            <div class="math-scroll" data-math-scroll tabindex="0" role="region" aria-label="合并访问带宽利用率公式，可横向滚动">
+                <math display="block" aria-label="有效带宽利用率等于三十二乘元素字节数，除以跨过缓存行数乘一百二十八">
+                    <mrow>
+                        <msub><mi>利用率</mi><mi>有效</mi></msub><mo>=</mo>
+                        <mfrac>
+                            <mrow><mn>32</mn><mo>&#215;</mo><mi>w</mi></mrow>
+                            <mrow><msub><mi>N</mi><mi>line</mi></msub><mo>&#215;</mo><mn>128</mn></mrow>
+                        </mfrac>
+                        <mo>,</mo><mspace width="0.4em"/>
+                        <msub><mi>N</mi><mi>line</mi></msub><mo>=</mo>
+                        <mrow><mo>&#8968;</mo><mfrac><mrow><mo>(</mo><mn>31</mn><mi>s</mi><mo>+</mo><mn>1</mn><mo>)</mo><mi>w</mi></mrow><mn>128</mn></mfrac><mo>&#8969;</mo></mrow>
+                    </mrow>
+                </math>
+            </div>
+        </div>
+
+        <p>以 4 字节 float 为例：s=1 时 N<sub>line</sub>=1、有效利用率 100%；s=2 时 N<sub>line</sub>=2、约 50%；s=4 时 N<sub>line</sub>=4、约 25%——与上表和下图中的示意完全一致。（教学示意：按 128 字节缓存行、单次加载 32 个元素的理想模型估算，未计入 L2 命中、扇区细分与合并器的其它细节。）</p>
+
 <figure>
 <svg role="img" aria-labelledby="fig-coal-title fig-coal-desc" viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg">
 <title id="fig-coal-title">合并访问与跨步访问的缓存行占用</title>
