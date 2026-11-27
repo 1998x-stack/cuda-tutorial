@@ -423,6 +423,22 @@ int main() {
             <li><strong>硬件代价</strong>：屏障需要硬件状态跟踪，占用SM的控制逻辑资源</li>
         </ul>
 
+        <p>“等待”这一项可以写成一个简单模型：设一个 block 里有 W 个 warp，第 i 个 warp 到达屏障的时刻为 a<sub>i</sub>，则屏障放行的时刻是所有 warp 里最晚的那个 max<sub>j</sub> a<sub>j</sub>，提前到达的 warp 只能空等。整块因同步而损失的空闲时间（按 warp 计）就是：</p>
+
+        <div class="math-equation" role="group" aria-label="屏障同步空闲时间公式">
+            <div class="math-scroll" data-math-scroll tabindex="0" role="region" aria-label="屏障同步空闲时间公式，可横向滚动">
+                <math display="block" aria-label="屏障同步空闲时间等于每个 warp 的最晚到达时刻减去自身到达时刻再求和">
+                    <mrow>
+                        <msub><mi>空闲</mi><mi>同步</mi></msub><mo>=</mo>
+                        <munderover><mo>&#8721;</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>W</mi></munderover>
+                        <mrow><mo>(</mo><munder><mo movablelimits="false">max</mo><mi>j</mi></munder><msub><mi>a</mi><mi>j</mi></msub><mo>&#8722;</mo><msub><mi>a</mi><mi>i</mi></msub><mo>)</mo></mrow>
+                    </mrow>
+                </math>
+            </div>
+        </div>
+
+        <p>式中 a<sub>i</sub> 是第 i 个 warp 到达屏障的时刻，W 是 block 内的 warp 数。式子说明两件事：负载越不均衡（各 a<sub>i</sub> 差距越大），空等越多；warp 数越多，每个 warp 的等待都会被计入，总空闲随之放大。这正是下面两条优化方向——<strong>减少屏障次数</strong>与<strong>负载均衡</strong>——背后的同一个原因。（教学示意：该式用于说明同步代价随负载不均衡与 warp 数增长的趋势，未计入硬件自身的屏障处理开销。）</p>
+
         <p>但这不意味着要避免使用 <code>__syncthreads()</code>——该用时必须用，否则结果错误。好的策略是：</p>
 
         <ul>
